@@ -1,0 +1,4 @@
+templates:
+  - cf-templates/**/*.yaml
+include_checks:
+  - I

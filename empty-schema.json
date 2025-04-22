@@ -1,0 +1,9 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$id": "no schema",
+    "title": "no schema",
+    "description": "no schema",
+    "type": "object",
+    "properties": {
+    }
+}

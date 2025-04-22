@@ -1,0 +1,84 @@
+#!/usr/bin/env node
+
+const yargs = require('yargs');
+const fs = require('fs');
+const path = require('path');
+
+const { createStack } = require('../dist/createStack');
+const { deleteStack } = require('../dist/deleteStack');
+const { redeployStack } = require('../dist/redeployStack');
+const { updateStack } = require('../dist/updateStack');
+
+const log = console.log;
+const error = (msg) => log(`\x1b[31mError: ${msg}\x1b[0m`);
+
+// Read version from package.json
+const packageJsonPath = path.resolve(__dirname, '../package.json');
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+const version = packageJson.version;
+
+yargs
+  .command(
+    'create-stack <stackName> <templateFile> <paramsFile>',
+    'Create a CloudFormation stack',
+    (yargs) => {
+      yargs.positional('stackName', { type: 'string', describe: 'Stack name' });
+      yargs.positional('templateFile', { type: 'string', describe: 'CloudFormation template file' });
+      yargs.positional('paramsFile', { type: 'string', describe: 'Parameter file' });
+    },
+    ({ stackName, templateFile, paramsFile }) => {
+      log(`Creating stack: ${stackName}...`);
+      createStack(stackName, templateFile, paramsFile);
+    }
+  )
+  .command(
+    'delete-stack <stackName> <repeatStackName>',
+    'Delete a CloudFormation stack',
+    (yargs) => {
+      yargs.positional('stackName', { type: 'string', describe: 'Stack name' });
+      yargs.positional('repeatStackName', { type: 'string', describe: 'Repeat stack name to confirm deletion' });
+    },
+    ({ stackName, repeatStackName }) => {
+      log(`Deleting stack: ${stackName}...`);
+      deleteStack(stackName, repeatStackName);
+    }
+  )
+  .command(
+    'redeploy-stack <stackName> <templateFile> <paramsFile>',
+    'Redeploy a CloudFormation stack',
+    (yargs) => {
+      yargs.positional('stackName', { type: 'string', describe: 'Stack name' });
+      yargs.positional('templateFile', { type: 'string', describe: 'CloudFormation template file' });
+      yargs.positional('paramsFile', { type: 'string', describe: 'Parameter file' });
+    },
+    ({ stackName, templateFile, paramsFile }) => {
+      log(`Redeploying stack: ${stackName}...`);
+      redeployStack(stackName, templateFile, paramsFile);
+    }
+  )
+  .command(
+    'update-stack <stackName> <templateFile> <paramsFile>',
+    'Update a CloudFormation stack',
+    (yargs) => {
+      yargs.positional('stackName', { type: 'string', describe: 'Stack name' });
+      yargs.positional('templateFile', { type: 'string', describe: 'CloudFormation template file' });
+      yargs.positional('paramsFile', { type: 'string', describe: 'Parameter file' });
+    },
+    ({ stackName, templateFile, paramsFile }) => {
+      log(`Updating stack: ${stackName}...`);
+      updateStack(stackName, templateFile, paramsFile);
+    }
+  )
+  .demandCommand(1)
+  .fail((msg, err, yargs) => {
+    if (msg) {
+      error(msg);
+      log('\n' + yargs.help());
+    }
+    process.exit(1);
+  })
+  .strict()
+  .help()
+  .alias('h', 'help')
+  .version(version) // Automatically pulls version from package.json
+  .argv;
