@@ -16,7 +16,7 @@ async function createChangeSet<P extends TemplateParams>(
     const cf = getCfClient();
     const changeset = await cf.send(new CreateChangeSetCommand({
         StackName: stackName,
-        TemplateBody: typeof template === 'string' ? template : template.template,
+        TemplateBody: typeof template === 'string' ? template : template.body,
         ChangeSetName: `${stackName}-rev-${Date.now()}`,
         ChangeSetType: operation,
         Parameters: typeof template === 'string' ? undefined : Object.entries(template.params).map(([key, value]) => ({

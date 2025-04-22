@@ -38,6 +38,6 @@ export async function createStack(
     }
 
     console.log(`creating stack "${stackName}" on account ${AWS_ACCOUNT_ID} with the following params:`, params);
-    await cfn.createStack(stackName, {template, params});
+    await cfn.createStack(stackName, {body: template, params});
 
 }

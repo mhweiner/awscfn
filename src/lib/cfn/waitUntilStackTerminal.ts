@@ -1,5 +1,5 @@
 import {Stack} from '@aws-sdk/client-cloudformation';
-import {getStackByName} from './getStack';
+import {getStackByName} from './getStackByName';
 import {isStackTerminal} from './isStackTerminal';
 
 export async function waitUntilStackTerminal(name: string): Promise<Stack> {

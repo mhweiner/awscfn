@@ -39,6 +39,6 @@ export async function redeployStack(stackName: string, templateFile: string): Pr
     }
 
     console.log(`updating stack "${stackName}" on account ${AWS_ACCOUNT_ID} with the following params:`, params);
-    await cfn.updateStack(existingStack, {template, params});
+    await cfn.updateStack(existingStack, {body: template, params});
 
 }

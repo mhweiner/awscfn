@@ -52,6 +52,119 @@ If the names don't match, the deletion will be aborted.
 
 > ⚠️ This is a destructive operation and cannot be undone.
 
+## API Reference
+
+> ⚠️ Requires AWS credentials to be configured in your shell or environment.
+
+### 📦 `createStack(stackName: string, template: Template<P>): Promise<Stack>`
+
+Creates a new CloudFormation stack using a change set and waits for it to complete or fail.
+
+```ts
+import { createStack } from 'awscfn';
+import type { Template } from 'awscfn/sdk';
+
+const template: Template<{ Env: string; AppName: string }> = {
+  body: myTemplateString,
+  params: {
+    Env: 'prod',
+    AppName: 'my-app',
+  },
+};
+
+await createStack('my-stack', template);
+```
+
+#### Arguments
+
+- `stackName`: The name of the CloudFormation stack.
+- `template`: A `Template<P>`, where `P` is the shape of the parameters.
+  - If a string is passed, it is treated as the raw CloudFormation template body.
+  - If an object is passed, it must contain:
+    - `body`: string (CloudFormation template)
+    - `params`: a plain object of parameters matching your template.
+
+#### Behavior
+
+- Creates a **change set** and executes it.
+- Waits for the stack to reach a terminal state (`CREATE_COMPLETE`, or an error).
+- Returns the resulting `Stack` from the AWS SDK.
+
+#### Error Handling
+
+Throws a `StackCreateFailure` if:
+
+- The change set fails to create or execute
+- The stack enters a failure state (e.g. `ROLLBACK_COMPLETE`)
+
+The error includes useful context:
+
+```ts
+{
+  stackName: string;
+  stackId?: string;
+  status?: StackStatus;
+  params?: TemplateParams;
+  sdkError?: Error;
+}
+```
+
+### 🔁 `updateStack(existingStack: Stack, template: Template<P>): Promise<Stack>`
+
+Updates a CloudFormation stack using a change set and waits for it to complete.
+
+```ts
+import {updateStack, getStackByName} from 'awscfn';
+
+const existing = await getStackByName('my-stack');
+
+if (existing) {
+  await updateStack(existing, {
+    body: myTemplateString,
+    params: {
+      Env: 'prod',
+      AppName: 'my-app',
+    },
+  });
+}
+```
+
+#### Arguments
+
+- `existingStack`: A `Stack` object returned from AWS (e.g. from `describeStacks`). The stack must already exist and be in a terminal state.
+- `template`: A `Template<P>` object — either:
+  - A raw template string
+  - Or `{ body: string, params: P }`
+
+#### Behavior
+
+- Fails immediately if the stack is **not in a terminal state**
+- If the stack is in `ROLLBACK_COMPLETE`, it:
+  - Deletes the stack
+  - Re-creates it using the same template (via `createStack`)
+- Otherwise:
+  - Creates and executes an **update-type change set**
+  - Waits for the stack to reach a terminal state
+  - Returns the resulting `Stack` object
+
+#### Error Handling
+
+If the update fails, a `StackUpdateFailure` is thrown with helpful context:
+
+```ts
+{
+  stackName: string;
+  originalStack: Stack;
+  terminalStack: Stack;
+  status?: StackStatus;
+  sdkError?: Error;
+}
+```
+
+> ℹ️ Requires AWS credentials in your environment (`AWS_PROFILE`, `AWS_ACCESS_KEY_ID`, etc.).
+
+> ✅ This function ensures safety by skipping updates for in-progress stacks and gracefully recovering from `ROLLBACK_COMPLETE` states.
+
 ## Contributing
 
 - ⭐ Star this repo if you like it!

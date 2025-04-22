@@ -2,7 +2,7 @@ import {CloudFormationClient} from '@aws-sdk/client-cloudformation';
 
 export type TemplateParams = Record<string, any>;
 export type Template<P extends TemplateParams> = {
-    template: string
+    body: string
     params: P
 } | string;
 
@@ -23,7 +23,7 @@ export function getCfClient(): CloudFormationClient {
 }
 
 export * from './createStack';
-export * from './getStack';
+export * from './getStackByName';
 export * from './updateStack';
 export * from './deleteStack';
 export * from './validateTemplate';
