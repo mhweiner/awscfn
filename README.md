@@ -5,7 +5,6 @@
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 [![AutoRel](https://img.shields.io/badge/v2-AutoRel?label=AutoRel&labelColor=0ab5fc&color=grey&link=https%3A%2F%2Fgithub.com%2Fmhweiner%2Fautorel)](https://github.com/mhweiner/autorel)
 
-
 **awscfn** is a lightweight CLI and TypeScript SDK for managing AWS CloudFormation stacks. It simplifies common actions like create, update, redeploy, and delete, and makes working with parameters painless by supporting clean, readable YAML files. Use it in your shell scripts or directly from Node.js projects to streamline CloudFormation workflows.
 
 ## CLI commands
