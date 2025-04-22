@@ -173,7 +173,7 @@ If the update fails, a `StackUpdateFailure` is thrown with helpful context:
 ## Contributing
 
 - ⭐ Star this repo if you like it!
-- 🐛 Open an [issue](https://github.com/mhweiner/idkitx/issues) for bugs or suggestions.
+- 🐛 Open an [issue](https://github.com/mhweiner/awscfn/issues) for bugs or suggestions.
 - 🤝 Submit a PR to `main` — all tests must pass.
 
 ## Related Projects
