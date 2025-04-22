@@ -9,7 +9,7 @@
 
 ## CLI commands
 
-You must first authenticate via aws cli or export keys into shell.
+> ⚠️ Requires AWS credentials to be configured in your shell or environment. [Start here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) if you haven't already.
 
 ### 🚀 create-stack 
 
@@ -59,7 +59,7 @@ If the names don't match, the deletion will be aborted.
 
 ## API Reference
 
-> ⚠️ Requires AWS credentials to be configured in your shell or environment.
+> ⚠️ Requires AWS credentials to be configured in your shell or environment. [Start here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) if you haven't already.
 
 ### 📦 `createStack(stackName: string, template: Template<P>): Promise<Stack>`
 
