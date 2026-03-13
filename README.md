@@ -63,11 +63,11 @@ npx awscfn create-stack ...
 
 | Flag | Description |
 |------|-------------|
-| `-C` | CI mode (compact output). Auto-detected when `CI=true` or `GITHUB_ACTIONS=true`. |
-| `-N` | Disable colored output |
-| `-V` | Show full error details on failure |
-| `-h` | Show help |
-| `-v` | Show version |
+| `--ci`, `-C` | CI mode (compact output). Auto-detected when `CI=true` or `GITHUB_ACTIONS=true`. |
+| `--no-color`, `-N` | Disable colored output |
+| `--verbose`, `-V` | Show full error details on failure |
+| `--help`, `-h` | Show help |
+| `--version`, `-v` | Show version |
 
 Run `awscfn --help` or `awscfn <command> --help` for full CLI usage.
 
@@ -112,9 +112,9 @@ awscfn create-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
 
 | Flag | Description |
 |------|-------------|
-| `-n` | Stack name |
-| `-t` | CloudFormation template file |
-| `-p` | Parameters file (YAML) |
+| `--name`, `-n` | Stack name |
+| `--template`, `-t` | CloudFormation template file |
+| `--params`, `-p` | Parameters file (YAML) |
 
 ### ⬆️ update-stack
 
@@ -124,9 +124,9 @@ awscfn update-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
 
 | Flag | Description |
 |------|-------------|
-| `-n` | Stack name |
-| `-t` | CloudFormation template file |
-| `-p` | Parameters file (YAML) |
+| `--name`, `-n` | Stack name |
+| `--template`, `-t` | CloudFormation template file |
+| `--params`, `-p` | Parameters file (YAML) |
 
 If there are no changes to apply, the command succeeds gracefully:
 ```
@@ -141,8 +141,8 @@ awscfn redeploy-stack -n <STACK_NAME> -t <TEMPLATE_FILE>
 
 | Flag | Description |
 |------|-------------|
-| `-n` | Stack name |
-| `-t` | CloudFormation template file |
+| `--name`, `-n` | Stack name |
+| `--template`, `-t` | CloudFormation template file |
 
 Redeploys using the existing stack's parameters. Useful for updating a stack with a new template without re-specifying params, or re-deploying after a failed create.
 
@@ -156,10 +156,10 @@ awscfn delete-stack -n <STACK_NAME> -c <STACK_NAME>
 
 | Flag | Description |
 |------|-------------|
-| `-n` | Stack name |
-| `-c` | Repeat stack name to confirm |
+| `--name`, `-n` | Stack name |
+| `--confirm`, `-c` | Repeat stack name to confirm |
 
-`-c` must match `-n` exactly to prevent accidental deletion.
+`--confirm` must match `--name` exactly to prevent accidental deletion.
 
 **Example:**
 
