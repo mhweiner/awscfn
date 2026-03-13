@@ -97,6 +97,7 @@ const confirmOpt = {
 yargs
   .option('ci', {
     type: 'boolean',
+    alias: 'C',
     description: 'CI mode (compact output). Auto-detected when CI=true or GITHUB_ACTIONS=true. Colors remain enabled in CI.',
     default: isCI,
   })
