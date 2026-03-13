@@ -80,7 +80,7 @@ const confirmOpt = {
 yargs
   .option('ci', {
     type: 'boolean',
-    description: 'Run in CI mode (minimal output, no colors)',
+    description: 'CI mode (compact output). Auto-detected when CI=true or GITHUB_ACTIONS=true. Colors remain enabled in CI.',
     default: isCI,
   })
   .option('no-color', {
@@ -92,7 +92,7 @@ yargs
   .middleware((argv) => {
     setOutputConfig({
       ci: argv.ci,
-      color: !argv.noColor && !argv.ci && process.stdout.isTTY,
+      color: !argv.noColor && (process.stdout.isTTY || argv.ci),
     });
   })
   .command(

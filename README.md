@@ -27,7 +27,7 @@ CLI and TypeScript SDK for managing AWS CloudFormation stacks.
 
 | Flag | Short | Description |
 |------|-------|-------------|
-| `--ci` | — | Run in CI mode (minimal output, no colors). Auto-detected when `CI=true` or `GITHUB_ACTIONS=true`. |
+| `--ci` | — | CI mode (compact output). Auto-detected when `CI=true` or `GITHUB_ACTIONS=true`. Colors stay on in CI (e.g. GitHub Actions supports ANSI). |
 | `--no-color` | `-N` | Disable colored output |
 | `--help` | `-h` | Show help |
 | `--version` | `-v` | Show version |
