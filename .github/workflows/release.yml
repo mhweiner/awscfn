@@ -7,6 +7,9 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # create GitHub releases/tags (autorel)
+      id-token: write  # npm trusted publishing (OIDC)
     concurrency:
       group: release-${{github.ref}}
       cancel-in-progress: true
