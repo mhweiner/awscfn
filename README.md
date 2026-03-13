@@ -9,15 +9,51 @@
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 [![AutoRel](https://img.shields.io/badge/%F0%9F%9A%80%20AutoRel-2D4DDE)](https://github.com/mhweiner/autorel)
 
-CLI and TypeScript SDK for managing AWS CloudFormation stacks.
+Deploy CloudFormation stacks without the usual suffering.
 
 ## Why awscfn?
 
-- **Simple YAML parameters** — No more wrestling with verbose JSON. Just clean, readable YAML files.
-- **See what's happening** — Real-time event streaming in your terminal. No refreshing the console, no juggling `aws cloudformation create-stack` and `describe-stack-events` in another window.
-- **Errors that make sense** — When deploys fail, you get the actual error message from CloudFormation, not a cryptic timeout.
-- **CI/CD friendly** — Works great in GitHub Actions with auto-detected CI mode.
-- **CLI & SDK** — Use from command line or import directly in Node.js/TypeScript projects.
+If you've deployed CloudFormation stacks, you know the pain:
+
+- You run `aws cloudformation create-stack` and get... nothing. Is it working? Who knows.
+- You open the AWS console, hit refresh, scroll through events, trying to find the one that matters.
+- It fails. The error says "Resource creation cancelled." The *actual* reason is buried somewhere in the event log.
+- The stack is stuck in `ROLLBACK_COMPLETE`. Now you have to delete it manually before you can try again.
+- Your CI job times out or exits 0 even though the deploy failed.
+- You write a parameter file and remember: oh right, CloudFormation wants *that* JSON format.
+
+**awscfn fixes this.**
+
+- **Watch deploys happen** — Stack events stream to your terminal in real time. No refreshing. No second window.
+- **See why it failed** — When a deploy fails, you get the actual failure reason, not "Resource creation cancelled."
+- **Recover automatically** — Stuck in `ROLLBACK_COMPLETE`? awscfn detects it and re-creates the stack for you.
+- **YAML params** — Simple YAML parameter files. No more verbose JSON.
+- **CI that works** — Auto-detects CI environments. Exits non-zero when deploys fail. Compact output mode.
+- **CLI + TypeScript SDK** — Use from the command line or import directly into Node.js/TypeScript projects.
+
+It's not a CDK. It's not a framework. It's just a better way to deploy raw CloudFormation.
+
+## Installation
+
+**Global install** (recommended for CLI use):
+
+```bash
+npm i -g awscfn
+```
+
+Then run commands directly: `awscfn create-stack ...`
+
+**Project dependency** (for SDK/library use):
+
+```bash
+npm i awscfn
+```
+
+**npx** (no install):
+
+```bash
+npx awscfn create-stack ...
+```
 
 ## CLI commands
 
@@ -25,13 +61,15 @@ CLI and TypeScript SDK for managing AWS CloudFormation stacks.
 
 ### Global Options
 
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--ci` | — | CI mode (compact output). Auto-detected when `CI=true` or `GITHUB_ACTIONS=true`. Colors stay on in CI (e.g. GitHub Actions supports ANSI). |
-| `--no-color` | `-N` | Disable colored output |
-| `--verbose` | `-V` | Show full error details (e.g. `err.data` JSON) on failure |
-| `--help` | `-h` | Show help |
-| `--version` | `-v` | Show version |
+| Flag | Description |
+|------|-------------|
+| `--ci`, `-C` | CI mode (compact output). Auto-detected when `CI=true` or `GITHUB_ACTIONS=true`. |
+| `--no-color`, `-N` | Disable colored output |
+| `--verbose`, `-V` | Show full error details on failure |
+| `--help`, `-h` | Show help |
+| `--version`, `-v` | Show version |
+
+Run `awscfn --help` or `awscfn <command> --help` for full CLI usage.
 
 ### Shell Completion
 
@@ -63,34 +101,32 @@ When a failure occurs, the error message includes the actual reason from CloudFo
 List all CloudFormation stacks in the current region (name, status, creation date).
 
 ```bash
-npx awscfn list-stacks
+awscfn list-stacks
 ```
-
-No options. Output is a table of stack name, status, and creation date.
 
 ### 🚀 create-stack
 
 ```bash
-npx awscfn create-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
+awscfn create-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
 ```
 
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--name` | `-n` | Stack name |
-| `--template` | `-t` | CloudFormation template file |
-| `--params` | `-p` | Parameters file (YAML) |
+| Flag | Description |
+|------|-------------|
+| `--name`, `-n` | Stack name |
+| `--template`, `-t` | CloudFormation template file |
+| `--params`, `-p` | Parameters file (YAML) |
 
 ### ⬆️ update-stack
 
 ```bash
-npx awscfn update-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
+awscfn update-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
 ```
 
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--name` | `-n` | Stack name |
-| `--template` | `-t` | CloudFormation template file |
-| `--params` | `-p` | Parameters file (YAML) |
+| Flag | Description |
+|------|-------------|
+| `--name`, `-n` | Stack name |
+| `--template`, `-t` | CloudFormation template file |
+| `--params`, `-p` | Parameters file (YAML) |
 
 If there are no changes to apply, the command succeeds gracefully:
 ```
@@ -100,13 +136,13 @@ If there are no changes to apply, the command succeeds gracefully:
 ### ♻️ redeploy-stack
 
 ```bash
-npx awscfn redeploy-stack -n <STACK_NAME> -t <TEMPLATE_FILE>
+awscfn redeploy-stack -n <STACK_NAME> -t <TEMPLATE_FILE>
 ```
 
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--name` | `-n` | Stack name |
-| `--template` | `-t` | CloudFormation template file |
+| Flag | Description |
+|------|-------------|
+| `--name`, `-n` | Stack name |
+| `--template`, `-t` | CloudFormation template file |
 
 Redeploys using the existing stack's parameters. Useful for updating a stack with a new template without re-specifying params, or re-deploying after a failed create.
 
@@ -115,20 +151,20 @@ Redeploys using the existing stack's parameters. Useful for updating a stack wit
 Deletes a CloudFormation stack with a confirmation safeguard.
 
 ```bash
-npx awscfn delete-stack -n <STACK_NAME> -c <STACK_NAME>
+awscfn delete-stack -n <STACK_NAME> -c <STACK_NAME>
 ```
 
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--name` | `-n` | Stack name |
-| `--confirm` | `-c` | Repeat stack name to confirm |
+| Flag | Description |
+|------|-------------|
+| `--name`, `-n` | Stack name |
+| `--confirm`, `-c` | Repeat stack name to confirm |
 
-`-c` must match `-n` exactly to prevent accidental deletion.
+`--confirm` must match `--name` exactly to prevent accidental deletion.
 
 **Example:**
 
 ```bash
-npx awscfn delete-stack -n my-app-prod -c my-app-prod
+awscfn delete-stack -n my-app-prod -c my-app-prod
 ```
 
 If the stack doesn't exist, the command will exit with an error.  
