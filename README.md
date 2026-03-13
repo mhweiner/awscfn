@@ -29,6 +29,7 @@ CLI and TypeScript SDK for managing AWS CloudFormation stacks.
 |------|-------|-------------|
 | `--ci` | — | CI mode (compact output). Auto-detected when `CI=true` or `GITHUB_ACTIONS=true`. Colors stay on in CI (e.g. GitHub Actions supports ANSI). |
 | `--no-color` | `-N` | Disable colored output |
+| `--verbose` | `-V` | Show full error details (e.g. `err.data` JSON) on failure |
 | `--help` | `-h` | Show help |
 | `--version` | `-v` | Show version |
 
@@ -141,7 +142,7 @@ If the names don't match, the deletion will be aborted.
 
 ### 📋 `listStacks(): Promise<StackSummary[]>`
 
-Returns all CloudFormation stacks in the current region (paginated). Excludes `DELETE_COMPLETE` (AWS default). Each item is an AWS SDK `StackSummary` (e.g. `StackName`, `StackStatus`, `CreationTime`).
+Returns all CloudFormation stacks in the current region (paginated). Excludes deleted stacks (`DELETE_COMPLETE`, `DELETE_IN_PROGRESS`) via `StackStatusFilter`. Each item is an AWS SDK `StackSummary` (e.g. `StackName`, `StackStatus`, `CreationTime`).
 
 ```ts
 import { listStacks } from 'awscfn';
