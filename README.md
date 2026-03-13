@@ -9,7 +9,29 @@
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 [![AutoRel](https://img.shields.io/badge/%F0%9F%9A%80%20AutoRel-2D4DDE)](https://github.com/mhweiner/autorel)
 
-CLI and TypeScript SDK for managing AWS CloudFormation stacks.
+Deploy CloudFormation stacks without the usual suffering.
+
+## Why awscfn?
+
+If you've deployed CloudFormation stacks, you know the pain:
+
+- You run `aws cloudformation create-stack` and get... nothing. Is it working? Who knows.
+- You open the AWS console, hit refresh, scroll through events, trying to find the one that matters.
+- It fails. The error says "Resource creation cancelled." The *actual* reason is buried somewhere in the event log.
+- The stack is stuck in `ROLLBACK_COMPLETE`. Now you have to delete it manually before you can try again.
+- Your CI job times out or exits 0 even though the deploy failed.
+- You write a parameter file and remember: oh right, CloudFormation wants *that* JSON format.
+
+**awscfn fixes this.**
+
+- **Watch deploys happen** — Stack events stream to your terminal in real time. No refreshing. No second window.
+- **See why it failed** — When a deploy fails, you get the actual failure reason, not "Resource creation cancelled."
+- **Recover automatically** — Stuck in `ROLLBACK_COMPLETE`? awscfn detects it and re-creates the stack for you.
+- **YAML params** — Simple YAML parameter files. No more verbose JSON.
+- **CI that works** — Auto-detects CI environments. Exits non-zero when deploys fail. Compact output mode.
+- **CLI + TypeScript SDK** — Use from the command line or import directly into Node.js/TypeScript projects.
+
+It's not a CDK. It's not a framework. It's just a better way to deploy raw CloudFormation.
 
 ## Installation
 
@@ -32,14 +54,6 @@ npm i awscfn
 ```bash
 npx awscfn create-stack ...
 ```
-
-## Why awscfn?
-
-- **Simple YAML parameters** — No more wrestling with verbose JSON. Just clean, readable YAML files.
-- **See what's happening** — Real-time event streaming in your terminal. No refreshing the console, no juggling `aws cloudformation create-stack` and `describe-stack-events` in another window.
-- **Errors that make sense** — When deploys fail, you get the actual error message from CloudFormation, not a cryptic timeout.
-- **CI/CD friendly** — Works great in GitHub Actions with auto-detected CI mode.
-- **CLI & SDK** — Use from command line or import directly in Node.js/TypeScript projects.
 
 ## CLI commands
 
