@@ -1,10 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 80">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80">
   <defs>
-    <linearGradient id="grad-light" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#FF9900;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#FF6600;stop-opacity:1" />
+    <linearGradient id="stack-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF9900"/>
+      <stop offset="100%" style="stop-color:#E86100"/>
     </linearGradient>
   </defs>
-  <text x="0" y="55" font-family="system-ui, -apple-system, sans-serif" font-size="56" font-weight="700" fill="#1a1a1a">aws</text>
-  <text x="115" y="55" font-family="system-ui, -apple-system, sans-serif" font-size="56" font-weight="700" fill="url(#grad-light)">cfn</text>
+  <!-- Stack icon -->
+  <g transform="translate(0, 12)">
+    <rect x="4" y="0" width="44" height="12" rx="2" fill="#232F3E"/>
+    <rect x="4" y="16" width="44" height="12" rx="2" fill="url(#stack-grad)"/>
+    <rect x="4" y="32" width="44" height="12" rx="2" fill="#232F3E"/>
+    <rect x="4" y="48" width="44" height="12" rx="2" fill="url(#stack-grad)"/>
+    <!-- Arrow indicating update -->
+    <path d="M52 30 L62 30 L62 24 L72 32 L62 40 L62 34 L52 34 Z" fill="#FF9900"/>
+  </g>
+  <!-- Text -->
+  <text x="85" y="54" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, monospace" font-size="48" font-weight="600" letter-spacing="-2" fill="#1a1a1a">awscfn</text>
 </svg>
