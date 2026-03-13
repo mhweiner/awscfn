@@ -4,7 +4,7 @@ import {
     waitUntilChangeSetCreateComplete,
 } from '@aws-sdk/client-cloudformation';
 import {Template, TemplateParams, getCfClient} from './index';
-import {dim, gray, symbols} from '../output';
+import {dim, getOutputConfig, gray, startSpinner, symbols} from '../output';
 
 type ChangeSetOperation = 'UPDATE' | 'CREATE';
 
@@ -26,6 +26,7 @@ function toCfnParameters(params: Record<string, unknown>): { ParameterKey: strin
 
 }
 
+// eslint-disable-next-line max-lines-per-function
 async function createChangeSet<P extends TemplateParams>(
     stackName: string,
     template: Template<P>,
@@ -48,11 +49,22 @@ async function createChangeSet<P extends TemplateParams>(
         Capabilities: ['CAPABILITY_NAMED_IAM'],
     }));
 
-    dim(`  ${symbols.ellipsis} Waiting for changeset to be ready...`);
+    const cfg = getOutputConfig();
+    const stopSpinner = cfg.ci ? null : startSpinner();
 
-    await waitUntilChangeSetCreateComplete({client: cf, maxWaitTime: 120}, {
-        ChangeSetName: changeset.Id,
-    });
+    if (cfg.ci) dim(`  ${symbols.ellipsis} Waiting for changeset to be ready...`);
+
+    try {
+
+        await waitUntilChangeSetCreateComplete({client: cf, maxWaitTime: 120}, {
+            ChangeSetName: changeset.Id,
+        });
+
+    } finally {
+
+        if (stopSpinner) stopSpinner();
+
+    }
 
     return changeset.Id as string;
 

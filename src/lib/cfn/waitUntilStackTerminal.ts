@@ -8,13 +8,16 @@ import {
     getFailureReason,
     EventStreamState,
 } from './streamStackEvents';
-import {getOutputConfig, dim, success, error, gray, symbols} from '../output';
+import {getOutputConfig, dim, success, error, gray, startSpinner, symbols} from '../output';
 
 export interface WaitResult {
     stack: Stack
     failureReason?: string
     allEvents: EventStreamState
 }
+
+/** Default max wait for stack terminal state (e.g. ECS placement fails, CFN rolls back slowly). */
+const DEFAULT_WAIT_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 export async function waitUntilStackTerminal(name: string): Promise<Stack> {
 
@@ -34,15 +37,24 @@ const FAILURE_STATUSES: StackStatus[] = [
     StackStatus.UPDATE_ROLLBACK_FAILED,
 ];
 
-// eslint-disable-next-line max-lines-per-function
-export async function waitUntilStackTerminalWithEvents(name: string): Promise<WaitResult> {
+export interface WaitUntilStackTerminalOptions {
+    /** Max wait (ms). Default 30m. Throws when exceeded (e.g. ECS placement failure). */
+    timeoutMs?: number
+}
 
+// eslint-disable-next-line max-lines-per-function
+export async function waitUntilStackTerminalWithEvents(
+    name: string,
+    options: WaitUntilStackTerminalOptions = {},
+): Promise<WaitResult> {
+
+    const {timeoutMs = DEFAULT_WAIT_TIMEOUT_MS} = options;
     const config = getOutputConfig();
     const eventState = createEventStreamState();
     const allEventsList: import('@aws-sdk/client-cloudformation').StackEvent[] = [];
     const startTime = Date.now();
     let pollCount = 0;
-
+    let stopSpinner: (() => void) | null = null;
 
     while (true) {
 
@@ -54,6 +66,13 @@ export async function waitUntilStackTerminalWithEvents(name: string): Promise<Wa
         try {
 
             const newEvents = await fetchNewEvents(name, eventState);
+
+            if (newEvents.length > 0 && stopSpinner) {
+
+                stopSpinner();
+                stopSpinner = null;
+
+            }
 
             for (const event of newEvents) {
 
@@ -70,20 +89,44 @@ export async function waitUntilStackTerminalWithEvents(name: string): Promise<Wa
 
         if (!isStackTerminal(stack)) {
 
+            const elapsed = Date.now() - startTime;
+
+            if (elapsed >= timeoutMs) {
+
+                if (stopSpinner) stopSpinner();
+
+                const minutes = Math.round(timeoutMs / 60000);
+
+                throw new Error(
+                    `Stack ${name} did not reach a terminal state within ${minutes} minutes. `
+                    + 'This can happen when ECS cannot place tasks (e.g. insufficient memory). Check ECS service events above.',
+                );
+
+            }
+
             pollCount++;
 
-            // Only show waiting message every 6 polls (60 seconds) in CI, or if no events shown
-            if (!config.ci || (pollCount % 6 === 0 && allEventsList.length === 0)) {
+            if (config.ci) {
 
-                const elapsed = Math.round((Date.now() - startTime) / 1000);
+                if (pollCount % 6 === 0 && allEventsList.length === 0) {
 
-                dim(`  ${symbols.ellipsis} Waiting for stack ${gray(`(${elapsed}s)`)}`);
+                    const elapsedSec = Math.round(elapsed / 1000);
+
+                    dim(`  ${symbols.ellipsis} Waiting for stack ${gray(`(${elapsedSec}s)`)}`);
+
+                }
+
+            } else {
+
+                if (!stopSpinner) stopSpinner = startSpinner();
 
             }
 
             await new Promise((resolve) => setTimeout(resolve, 10000));
 
         } else {
+
+            if (stopSpinner) stopSpinner();
 
             const elapsed = Math.round((Date.now() - startTime) / 1000);
             const status = stack.StackStatus as StackStatus;

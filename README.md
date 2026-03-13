@@ -42,19 +42,17 @@ Add to your shell config (e.g. `~/.zshrc`) for command and file-path completion.
 
 ### Event Streaming
 
-During stack operations, awscfn streams CloudFormation events in real-time:
+During stack operations, awscfn streams CloudFormation stack events in real-time (resource create/update/delete progress):
 
 ```
-→ Updating stack my-service-stack
+→ Updating stack my-stack
   ● Creating changeset (update)
   … Waiting for changeset to be ready...
   ● Executing changeset...
-    ● ECS/TaskDefinition / TaskDef — update in progress
-    ✓ ECS/TaskDefinition / TaskDef — update complete
-    ● ECS/Service / MyService — update in progress
-    ✓ ECS/Service / MyService — update complete
+    ● SomeResource / MyResource — update in progress
+    ✓ SomeResource / MyResource — update complete
   ✓ Stack reached update complete (45s)
-✓ Stack my-service-stack updated successfully
+✓ Stack my-stack updated successfully
 ```
 
 When a failure occurs, the error message includes the actual reason from CloudFormation events.

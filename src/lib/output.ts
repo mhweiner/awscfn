@@ -145,3 +145,44 @@ export const symbols = {
     warning: '⚠',
     box: '▪',
 };
+
+const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+let spinnerInterval: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Start a spinner on the current line (non-CI + TTY only). Returns a stop function.
+ */
+export function startSpinner(): () => void {
+
+    if (config.ci || !process.stdout.isTTY) {
+
+        return () => {};
+
+    }
+
+    let i = 0;
+
+    spinnerInterval = setInterval(() => {
+
+        const frame = SPINNER_FRAMES[i % SPINNER_FRAMES.length];
+        const gray = config.color ? '\x1b[90m' : '';
+        const reset = config.color ? '\x1b[0m' : '';
+
+        process.stdout.write(`\r  ${gray}${frame}${reset} `);
+        i++;
+
+    }, 80);
+
+    return () => {
+
+        if (spinnerInterval) {
+
+            clearInterval(spinnerInterval);
+            spinnerInterval = null;
+            process.stdout.write('\r  \r');
+
+        }
+
+    };
+
+}
