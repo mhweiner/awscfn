@@ -1,5 +1,5 @@
-export function isError(e: any): e is Error {
+export function isError(e: unknown): e is Error {
 
-    return e.message !== undefined;
+    return typeof e === 'object' && e !== null && 'message' in e;
 
 }

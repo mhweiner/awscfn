@@ -1,43 +1,32 @@
-import {getParamsFromFile} from './lib/getParamsFromFile';
-import {readFileSync} from 'node:fs';
 import * as cfn from './lib/cfn';
-
-// The following must be exported
-const {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    AWS_REGION,
-    AWS_ACCOUNT_ID,
-} = process.env;
+import {loadTemplateAndParams} from './cli/loadTemplateAndParams';
+import {validateTemplateOrExit} from './cli/validateTemplate';
+import {logStackAction} from './cli/log';
 
 /**
- * Only used by the CLI
+ * CLI handler: create a new CloudFormation stack.
  */
 export async function createStack(
     stackName: string,
-    templateFile: string,
-    paramsFile: string
+    templatePath: string,
+    paramsPath?: string,
 ): Promise<void> {
 
     cfn.initCloudFormationClient();
 
-    const params = await getParamsFromFile(paramsFile) as any;
-    const template = readFileSync(templateFile, 'utf-8');
-    const existingStack = await cfn.getStackByName(stackName);
+    const {template, params} = await loadTemplateAndParams(templatePath, paramsPath);
+    const existing = await cfn.getStackByName(stackName);
 
-    if (existingStack) throw new Error('stack already exists, try update command');
+    if (existing) {
 
-    console.log('validating template...');
-
-    const validationResult = await cfn.validateTemplate(template);
-
-    if (validationResult instanceof Error) {
-
-        console.error('template validation failed:', validationResult);
-        process.exit(1);
+        throw new Error('stack already exists, try update command');
 
     }
 
-    console.log(`creating stack "${stackName}" on account ${AWS_ACCOUNT_ID} with the following params:`, params);
+    console.log('validating template...');
+    await validateTemplateOrExit(template);
+
+    logStackAction(stackName, 'creating', params);
     await cfn.createStack(stackName, {body: template, params});
 
 }

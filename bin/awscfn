@@ -1,84 +1,171 @@
 #!/usr/bin/env node
 
-const yargs = require('yargs');
 const fs = require('fs');
 const path = require('path');
+const yargs = require('yargs');
 
 const { createStack } = require('../dist/createStack');
 const { deleteStack } = require('../dist/deleteStack');
 const { redeployStack } = require('../dist/redeployStack');
 const { updateStack } = require('../dist/updateStack');
+const { setOutputConfig } = require('../dist/lib/output');
 
-const log = console.log;
-const error = (msg) => log(`\x1b[31mError: ${msg}\x1b[0m`);
+const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'));
+const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
 
-// Read version from package.json
-const packageJsonPath = path.resolve(__dirname, '../package.json');
-const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-const version = packageJson.version;
+const FILE_FLAGS = ['--template', '--params', '-t', '-p'];
+
+function completeFile(current) {
+  const dir = path.dirname(current) || '.';
+  const prefix = path.basename(current);
+  try {
+    const fullDir = path.resolve(process.cwd(), dir);
+    const files = fs.readdirSync(fullDir);
+    return files
+      .filter((f) => f.startsWith(prefix))
+      .map((f) => {
+        const joined = path.join(dir === '.' ? '' : dir, f);
+        try {
+          const stat = fs.statSync(path.resolve(process.cwd(), joined));
+          return stat.isDirectory() ? joined + path.sep : joined;
+        } catch {
+          return joined;
+        }
+      });
+  } catch {
+    return [];
+  }
+}
+
+function isCompletingFileValue() {
+  const argv = process.argv;
+  const prev = argv[argv.length - 2];
+  return typeof prev === 'string' && FILE_FLAGS.includes(prev);
+}
+
+function logError(msg) {
+  console.log(`\x1b[31mError: ${msg}\x1b[0m`);
+}
+
+function logErrorDetails(data) {
+  if (data) {
+    console.log('\nError details:');
+    console.log(JSON.stringify(data, null, 2));
+  }
+}
+
+function clarifyAwsError(msg) {
+  if (/region\s+is\s+missing|configuration.*region|Missing required key 'region'/i.test(msg)) {
+    return 'AWS region is not set. Set AWS_REGION or AWS_DEFAULT_REGION, or run `aws configure` (or `aws configure sso` if your org uses SSO).';
+  }
+  if (/credentials|Unable to locate credentials|Token is expired/i.test(msg)) {
+    return 'AWS credentials not found or expired. Set AWS_PROFILE, AWS_ACCESS_KEY_ID/secret, or run `aws configure` (or `aws configure sso` if your org uses SSO).';
+  }
+  return msg;
+}
+
+async function runCommand(fn) {
+  try {
+    await fn();
+  } catch (err) {
+    const message = clarifyAwsError(err.message);
+    logError(message);
+    if (message !== err.message) {
+      console.log(`\x1b[90m(original: ${err.message})\x1b[0m`);
+    }
+    logErrorDetails(err.data);
+    process.exit(1);
+  }
+}
+
+const nameOpt = {
+  name: { type: 'string', alias: 'n', describe: 'Stack name', demandOption: true },
+};
+const templateOpt = {
+  template: { type: 'string', alias: 't', describe: 'CloudFormation template file', demandOption: true },
+};
+const paramsOpt = {
+  params: { type: 'string', alias: 'p', describe: 'Parameters file (YAML). Optional; omit to use template defaults.', demandOption: false },
+};
+const confirmOpt = {
+  confirm: { type: 'string', alias: 'c', describe: 'Repeat stack name to confirm deletion', demandOption: true },
+};
 
 yargs
+  .option('ci', {
+    type: 'boolean',
+    description: 'CI mode (compact output). Auto-detected when CI=true or GITHUB_ACTIONS=true. Colors remain enabled in CI.',
+    default: isCI,
+  })
+  .option('no-color', {
+    type: 'boolean',
+    alias: 'N',
+    description: 'Disable colored output',
+    default: false,
+  })
+  .middleware((argv) => {
+    setOutputConfig({
+      ci: argv.ci,
+      color: !argv.noColor && (process.stdout.isTTY || argv.ci),
+    });
+  })
   .command(
-    'create-stack <stackName> <templateFile> <paramsFile>',
+    'create-stack',
     'Create a CloudFormation stack',
-    (yargs) => {
-      yargs.positional('stackName', { type: 'string', describe: 'Stack name' });
-      yargs.positional('templateFile', { type: 'string', describe: 'CloudFormation template file' });
-      yargs.positional('paramsFile', { type: 'string', describe: 'Parameter file' });
-    },
-    ({ stackName, templateFile, paramsFile }) => {
-      log(`Creating stack: ${stackName}...`);
-      createStack(stackName, templateFile, paramsFile);
+    (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt }),
+    ({ name, template, params }) => {
+      console.log(`Creating stack: ${name}...`);
+      runCommand(() => createStack(name, template, params));
     }
   )
   .command(
-    'delete-stack <stackName> <repeatStackName>',
+    'delete-stack',
     'Delete a CloudFormation stack',
-    (yargs) => {
-      yargs.positional('stackName', { type: 'string', describe: 'Stack name' });
-      yargs.positional('repeatStackName', { type: 'string', describe: 'Repeat stack name to confirm deletion' });
-    },
-    ({ stackName, repeatStackName }) => {
-      log(`Deleting stack: ${stackName}...`);
-      deleteStack(stackName, repeatStackName);
+    (cmd) => cmd.options({ ...nameOpt, ...confirmOpt }),
+    ({ name, confirm }) => {
+      console.log(`Deleting stack: ${name}...`);
+      runCommand(() => deleteStack(name, confirm));
     }
   )
   .command(
-    'redeploy-stack <stackName> <templateFile> <paramsFile>',
-    'Redeploy a CloudFormation stack',
-    (yargs) => {
-      yargs.positional('stackName', { type: 'string', describe: 'Stack name' });
-      yargs.positional('templateFile', { type: 'string', describe: 'CloudFormation template file' });
-      yargs.positional('paramsFile', { type: 'string', describe: 'Parameter file' });
-    },
-    ({ stackName, templateFile, paramsFile }) => {
-      log(`Redeploying stack: ${stackName}...`);
-      redeployStack(stackName, templateFile, paramsFile);
+    'redeploy-stack',
+    'Redeploy a CloudFormation stack (uses existing params)',
+    (cmd) => cmd.options({ ...nameOpt, ...templateOpt }),
+    ({ name, template }) => {
+      console.log(`Redeploying stack: ${name}...`);
+      runCommand(() => redeployStack(name, template));
     }
   )
   .command(
-    'update-stack <stackName> <templateFile> <paramsFile>',
+    'update-stack',
     'Update a CloudFormation stack',
-    (yargs) => {
-      yargs.positional('stackName', { type: 'string', describe: 'Stack name' });
-      yargs.positional('templateFile', { type: 'string', describe: 'CloudFormation template file' });
-      yargs.positional('paramsFile', { type: 'string', describe: 'Parameter file' });
-    },
-    ({ stackName, templateFile, paramsFile }) => {
-      log(`Updating stack: ${stackName}...`);
-      updateStack(stackName, templateFile, paramsFile);
+    (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt }),
+    ({ name, template, params }) => {
+      console.log(`Updating stack: ${name}...`);
+      runCommand(() => updateStack(name, template, params));
+    }
+  )
+  .completion(
+    'completion',
+    'Generate shell completion script',
+    (current, argv, defaultCompletion, done) => {
+      if (isCompletingFileValue()) {
+        return done(completeFile(current || ''));
+      }
+      defaultCompletion();
     }
   )
   .demandCommand(1)
   .fail((msg, err, yargs) => {
     if (msg) {
-      error(msg);
-      log('\n' + yargs.help());
+      logError(msg);
+      console.log('\n' + yargs.help());
     }
     process.exit(1);
   })
   .strict()
   .help()
   .alias('h', 'help')
-  .version(version) // Automatically pulls version from package.json
+  .version(pkg.version)
+  .alias('v', 'version')
   .argv;

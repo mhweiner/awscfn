@@ -1,7 +1,7 @@
 {
   "name": "awscfn",
   "version": "0.0.0-autorel",
-  "description": "CLI and TypeScript SDK for managing AWS CloudFormation stacks — create, update, redeploy, delete — with simple YAML-based parameter support.",
+  "description": "CLI and TypeScript SDK for managing AWS CloudFormation stacks with simple YAML parameters and real-time event streaming.",
   "type": "commonjs",
   "main": "./dist/index.js",
   "types": "dist/index.d.ts",
@@ -16,32 +16,36 @@
   "bin": {
     "awscfn": "bin/awscfn"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mhweiner/awscfn.git"
   },
   "scripts": {
-    "prepare": "npm run build",
-    "test": "hoare 'src/**/*.spec.ts'",
-    "lint": "eslint ./ --ext .js,.ts",
-    "build": "tsc && tscp"
+    "prepare": "[ -d dist ] || npm run build",
+    "test": "kizu -f 'src/**/*.spec.ts'",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "build": "tsc && npm run copy-assets",
+    "copy-assets": "node scripts/copy-assets.cjs",
+    "validate": "npm run lint && npm run build && npm test"
   },
   "dependencies": {
-    "@aws-sdk/client-cloudformation": "3.620.1",
-    "@esm2cjs/execa": "^6.1.1-cjs.1",
-    "js-yaml": "^4.1.0",
-    "semver": "^7.5.1",
-    "typescript-cp": "^0.1.9",
+    "@aws-sdk/client-cloudformation": "3.1008.0",
+    "js-yaml": "4.1.1",
     "yargs": "17.7.2"
   },
   "devDependencies": {
-    "@types/js-yaml": "^4.0.5",
-    "@types/node": "20.17.16",
-    "@typescript-eslint/eslint-plugin": "^7.1.0",
-    "@typescript-eslint/parser": "^7.1.0",
-    "eslint": "^8.34.0",
-    "hoare": "^3.0.17",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.3.3"
+    "@eslint/js": "10.0.1",
+    "@types/js-yaml": "4.0.9",
+    "@types/node": "22.19.15",
+    "@types/yargs": "17.0.35",
+    "eslint": "10.0.3",
+    "globals": "17.4.0",
+    "kizu": "5.1.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.57.0"
   }
 }

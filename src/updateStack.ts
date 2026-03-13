@@ -1,43 +1,32 @@
-import {getParamsFromFile} from './lib/getParamsFromFile';
-import {readFileSync} from 'fs';
 import * as cfn from './lib/cfn';
-
-// The following must be exported
-const {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    AWS_REGION,
-    AWS_ACCOUNT_ID,
-} = process.env;
+import {loadTemplateAndParams} from './cli/loadTemplateAndParams';
+import {validateTemplateOrExit} from './cli/validateTemplate';
+import {logStackAction} from './cli/log';
 
 /**
- * Only used by the CLI
+ * CLI handler: update an existing CloudFormation stack.
  */
 export async function updateStack(
     stackName: string,
-    templateFile: string,
-    paramsFile: string
+    templatePath: string,
+    paramsPath?: string,
 ): Promise<void> {
 
     cfn.initCloudFormationClient();
 
-    const params = await getParamsFromFile(paramsFile) as any;
-    const template = readFileSync(templateFile, 'utf-8');
-    const existingStack = await cfn.getStackByName(stackName);
+    const {template, params} = await loadTemplateAndParams(templatePath, paramsPath);
+    const existing = await cfn.getStackByName(stackName);
 
-    if (!existingStack) throw new Error('stack not found, try create command');
+    if (!existing) {
 
-    console.log('validating template...');
-
-    const validationResult = await cfn.validateTemplate(template);
-
-    if (validationResult instanceof Error) {
-
-        console.error('template validation failed:', validationResult);
-        process.exit(1);
+        throw new Error('stack not found, try create command');
 
     }
 
-    console.log(`updating stack "${stackName}" on account ${AWS_ACCOUNT_ID} with the following params:`, params);
-    await cfn.updateStack(existingStack, {body: template, params});
+    console.log('validating template...');
+    await validateTemplateOrExit(template);
+
+    logStackAction(stackName, 'updating', params);
+    await cfn.updateStack(existing, {body: template, params});
 
 }

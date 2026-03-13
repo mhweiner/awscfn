@@ -1,55 +1,123 @@
-# awscfn
+<picture>
+    <source srcset="docs/awscfn-logo-light.svg" media="(prefers-color-scheme: light)">
+    <source srcset="docs/awscfn-logo-dark.svg" media="(prefers-color-scheme: dark)">
+    <img src="docs/awscfn-logo-light.svg" alt="awscfn" width="200">
+</picture>
 
 [![build status](https://github.com/mhweiner/awscfn/actions/workflows/release.yml/badge.svg)](https://github.com/mhweiner/awscfn/actions)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue)]()
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
-[![AutoRel](https://img.shields.io/badge/v2-AutoRel?label=AutoRel&labelColor=0ab5fc&color=grey&link=https%3A%2F%2Fgithub.com%2Fmhweiner%2Fautorel)](https://github.com/mhweiner/autorel)
+[![AutoRel](https://img.shields.io/badge/%F0%9F%9A%80%20AutoRel-2D4DDE)](https://github.com/mhweiner/autorel)
 
-**awscfn** is a lightweight CLI and TypeScript SDK for managing AWS CloudFormation stacks. It simplifies common actions like create, update, redeploy, and delete, and makes working with parameters painless by supporting clean, readable YAML files. Use it in your shell scripts or directly from Node.js projects to streamline CloudFormation workflows.
+CLI and TypeScript SDK for managing AWS CloudFormation stacks.
+
+## Why awscfn?
+
+- **Simple YAML parameters** — No more wrestling with verbose JSON. Just clean, readable YAML files.
+- **See what's happening** — Real-time event streaming shows you exactly what CloudFormation is doing instead of waiting blindly.
+- **Errors that make sense** — When deploys fail, you get the actual error message from CloudFormation, not a cryptic timeout.
+- **CI/CD friendly** — Works great in GitHub Actions with auto-detected CI mode.
+- **CLI & SDK** — Use from command line or import directly in Node.js/TypeScript projects.
 
 ## CLI commands
 
 > ⚠️ Requires AWS credentials to be configured in your shell or environment. [Start here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) if you haven't already.
 
-### 🚀 create-stack 
+### Global Options
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--ci` | — | CI mode (compact output). Auto-detected when `CI=true` or `GITHUB_ACTIONS=true`. Colors stay on in CI (e.g. GitHub Actions supports ANSI). |
+| `--no-color` | `-N` | Disable colored output |
+| `--help` | `-h` | Show help |
+| `--version` | `-v` | Show version |
+
+### Shell Completion
 
 ```bash
-npx awscfn create-stack {STACK_NAME} {TEMPLATE_FILE} {PARAMS_FILE}
+source <(awscfn completion)
 ```
 
-Stack name is the name of the stack in CloudFormation. Template file is the path to the CloudFormation template. Params file is the path to the parameters file.
+Add to your shell config (e.g. `~/.zshrc`) for command and file-path completion.
+
+### Event Streaming
+
+During stack operations, awscfn streams CloudFormation stack events in real-time (resource create/update/delete progress):
+
+```
+→ Updating stack my-stack
+  ● Creating changeset (update)
+  … Waiting for changeset to be ready...
+  ● Executing changeset...
+    ● SomeResource / MyResource — update in progress
+    ✓ SomeResource / MyResource — update complete
+  ✓ Stack reached update complete (45s)
+✓ Stack my-stack updated successfully
+```
+
+When a failure occurs, the error message includes the actual reason from CloudFormation events.
+
+### 🚀 create-stack
+
+```bash
+npx awscfn create-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
+```
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--name` | `-n` | Stack name |
+| `--template` | `-t` | CloudFormation template file |
+| `--params` | `-p` | Parameters file (YAML) |
 
 ### ⬆️ update-stack
 
 ```bash
-npx awscfn update-stack {STACK_NAME} {TEMPLATE_FILE} {PARAMS_FILE}
+npx awscfn update-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
 ```
 
-Stack name is the name of the stack in CloudFormation. Template file is the path to the CloudFormation template. Params file is the path to the parameters file. There must be changes to the template in order for the stack to update.
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--name` | `-n` | Stack name |
+| `--template` | `-t` | CloudFormation template file |
+| `--params` | `-p` | Parameters file (YAML) |
+
+If there are no changes to apply, the command succeeds gracefully:
+```
+✓ Stack my-stack is up to date (no changes)
+```
 
 ### ♻️ redeploy-stack
 
 ```bash
-npx awscfn redeploy-stack {STACK_NAME} {TEMPLATE_FILE} {PARAMS_FILE}
+npx awscfn redeploy-stack -n <STACK_NAME> -t <TEMPLATE_FILE>
 ```
 
-Redeploys a CloudFormation stack with the given name and template file, using the existing stack's parameters. Useful for updating a stack with a new template without having to specify all the parameters again, or for re-deploying a stack that failed to create for some reason.
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--name` | `-n` | Stack name |
+| `--template` | `-t` | CloudFormation template file |
 
-### 🗑️ `delete-stack`
+Redeploys using the existing stack's parameters. Useful for updating a stack with a new template without re-specifying params, or re-deploying after a failed create.
 
-Deletes a CloudFormation stack by name, with a confirmation safeguard.
+### 🗑️ delete-stack
+
+Deletes a CloudFormation stack with a confirmation safeguard.
 
 ```bash
-npx awscfn delete-stack {STACK_NAME} {CONFIRM_STACK_NAME}
+npx awscfn delete-stack -n <STACK_NAME> -c <STACK_NAME>
 ```
 
-- `STACK_NAME`: The name of the stack to delete.
-- `CONFIRM_STACK_NAME`: Must match `STACK_NAME` exactly — used as a safety check to prevent accidental deletion.
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--name` | `-n` | Stack name |
+| `--confirm` | `-c` | Repeat stack name to confirm |
+
+`-c` must match `-n` exactly to prevent accidental deletion.
 
 **Example:**
 
 ```bash
-npx awscfn delete-stack my-app-prod my-app-prod
+npx awscfn delete-stack -n my-app-prod -c my-app-prod
 ```
 
 If the stack doesn't exist, the command will exit with an error.  
@@ -111,7 +179,16 @@ The error includes useful context:
   status?: StackStatus;
   params?: TemplateParams;
   sdkError?: Error;
+  failureReason?: string;  // The actual error from CloudFormation events
 }
+```
+
+The error message itself includes the failure reason when available:
+
+```
+💥 Failed to create stack my-stack
+
+Reason: CannotPullContainerError: repository does not exist
 ```
 
 ### 🔁 `updateStack(existingStack: Stack, template: Template<P>): Promise<Stack>`
@@ -147,6 +224,9 @@ if (existing) {
 - If the stack is in `ROLLBACK_COMPLETE`, it:
   - Deletes the stack
   - Re-creates it using the same template (via `createStack`)
+- If there are **no changes** to apply:
+  - Returns the existing stack immediately (no error)
+  - Outputs: `✓ Stack my-stack is up to date (no changes)`
 - Otherwise:
   - Creates and executes an **update-type change set**
   - Waits for the stack to reach a terminal state
@@ -163,7 +243,16 @@ If the update fails, a `StackUpdateFailure` is thrown with helpful context:
   terminalStack: Stack;
   status?: StackStatus;
   sdkError?: Error;
+  failureReason?: string;  // The actual error from CloudFormation events
 }
+```
+
+The error message itself includes the failure reason when available:
+
+```
+💥 Failed to update stack my-stack
+
+Reason: Resource handler returned message: "CannotPullContainerError: image not found"
 ```
 
 > ℹ️ Requires AWS credentials in your environment (`AWS_PROFILE`, `AWS_ACCESS_KEY_ID`, etc.).
@@ -172,14 +261,9 @@ If the update fails, a `StackUpdateFailure` is thrown with helpful context:
 
 ## Contributing
 
-- ⭐ Star this repo if you like it!
-- 🐛 Open an [issue](https://github.com/mhweiner/awscfn/issues) for bugs or suggestions.
-- 🤝 Submit a PR to `main` — all tests must pass.
+- Open an [issue](https://github.com/mhweiner/awscfn/issues) for bugs or suggestions
+- Submit a PR to `main` — all tests must pass
 
-## Related Projects
+## License
 
-- [autorel](https://github.com/mhweiner/autorel): Automate semantic releases based on conventional commits.
-- [hoare](https://github.com/mhweiner/hoare): A fast, defensive test runner for JS/TS.
-- [jsout](https://github.com/mhweiner/jsout): A minimal logger for JS/TS, syslog-style.
-- [brek](https://github.com/mhweiner/brek): Typed config loader for dynamic, secret-based configs.
-- [pgsmith](https://github.com/mhweiner/pgsmith): A SQL builder for parameterized queries in PostgreSQL.
+MIT

@@ -3,18 +3,19 @@ import {
     StackStatus,
 } from '@aws-sdk/client-cloudformation';
 import {TemplateParams, Template} from './index';
-import {waitUntilStackTerminal} from './waitUntilStackTerminal';
+import {waitUntilStackTerminalWithEvents} from './waitUntilStackTerminal';
 import {createAndExecChangeSet} from './executeChangeSet';
 import {toResultAsync} from '../toResult';
+import {info, success, cyan, symbols} from '../output';
 
 export async function createStack<P extends TemplateParams>(
     stackName: string,
-    template: Template<P>
+    template: Template<P>,
 ): Promise<Stack> {
 
-    console.log(`creating stack ${stackName}`);
+    info(`${symbols.arrow} Creating stack ${cyan(stackName)}`);
 
-    const [sdkError, changeSetId] = await toResultAsync(createAndExecChangeSet(stackName, template, 'CREATE'));
+    const [sdkError] = await toResultAsync(createAndExecChangeSet(stackName, template, 'CREATE'));
 
     if (sdkError) {
 
@@ -26,15 +27,14 @@ export async function createStack<P extends TemplateParams>(
 
     }
 
-    console.log(`created stack ${stackName} with changeset ${changeSetId}`);
+    const result = await waitUntilStackTerminalWithEvents(stackName);
+    const status = result.stack.StackStatus as StackStatus;
 
-    const stack = await waitUntilStackTerminal(stackName);
-    const status = stack.StackStatus as StackStatus; // AWS type issue
+    if (result.stack.StackStatus === StackStatus.CREATE_COMPLETE) {
 
-    if (stack.StackStatus === StackStatus.CREATE_COMPLETE) {
+        success(`${symbols.check} Stack ${cyan(stackName)} created successfully`);
 
-        console.log(`✅ stack ${stack.StackId} is CREATE_COMPLETE`);
-        return stack;
+        return result.stack;
 
     } else {
 
@@ -42,6 +42,7 @@ export async function createStack<P extends TemplateParams>(
             status,
             stackName,
             params: typeof template === 'string' ? undefined : template.params,
+            failureReason: result.failureReason,
         });
 
     }
@@ -54,14 +55,18 @@ interface StackCreationErrorData {
     stackName: string
     sdkError?: Error
     status?: StackStatus
+    failureReason?: string
 }
 
 export class StackCreateFailure extends Error {
 
     data: StackCreationErrorData;
+
     constructor(data: StackCreationErrorData) {
 
-        super(`💥 Failed to create stack ${data.stackName}`);
+        const reason = data.failureReason ? `\n\nReason: ${data.failureReason}` : '';
+
+        super(`💥 Failed to create stack ${data.stackName}${reason}`);
         Object.setPrototypeOf(this, new.target.prototype); // restore prototype chain
         this.name = this.constructor.name;
         this.data = data;
