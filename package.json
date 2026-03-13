@@ -1,7 +1,7 @@
 {
   "name": "awscfn",
   "version": "0.0.0-autorel",
-  "description": "CLI and TypeScript SDK for managing AWS CloudFormation stacks with real-time event streaming and color-coded output.",
+  "description": "CLI and TypeScript SDK for managing AWS CloudFormation stacks with simple YAML parameters, real-time event streaming, and color-coded output.",
   "type": "commonjs",
   "main": "./dist/index.js",
   "types": "dist/index.d.ts",
