@@ -4,9 +4,12 @@ export interface OutputConfig {
     verbose: boolean
 }
 
+const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+
 let config: OutputConfig = {
-    ci: process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true',
-    color: !process.env.NO_COLOR && process.stdout.isTTY === true,
+    ci: isCI,
+    // Enable colors if: no NO_COLOR env, AND (TTY OR CI - GitHub Actions supports ANSI colors)
+    color: !process.env.NO_COLOR && (process.stdout.isTTY === true || isCI),
     verbose: false,
 };
 

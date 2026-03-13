@@ -18,9 +18,11 @@ exports.yellow = yellow;
 exports.gray = gray;
 exports.blue = blue;
 exports.magenta = magenta;
+const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
 let config = {
-    ci: process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true',
-    color: !process.env.NO_COLOR && process.stdout.isTTY === true,
+    ci: isCI,
+    // Enable colors if: no NO_COLOR env, AND (TTY OR CI - GitHub Actions supports ANSI colors)
+    color: !process.env.NO_COLOR && (process.stdout.isTTY === true || isCI),
     verbose: false,
 };
 function setOutputConfig(newConfig) {
