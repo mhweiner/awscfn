@@ -121,6 +121,7 @@ yargs
       }
     }
   )
+  .completion('completion', 'Generate shell completion script')
   .demandCommand(1)
   .fail((msg, err, yargs) => {
     if (msg) {

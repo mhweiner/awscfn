@@ -32,6 +32,18 @@ CLI and TypeScript SDK for managing AWS CloudFormation stacks.
 | `--help`, `-h` | Show help |
 | `--version` | Show version |
 
+### Shell Completion
+
+Generate shell completion scripts for tab-completion of commands and options:
+
+```bash
+# Add to your ~/.zshrc or ~/.bashrc
+awscfn completion >> ~/.zshrc
+
+# Or source directly for current session
+source <(awscfn completion)
+```
+
 ### Event Streaming
 
 During stack operations, awscfn streams CloudFormation events in real-time:
