@@ -5,8 +5,6 @@
 </picture>
 
 [![build status](https://github.com/kizu-org/awscfn/actions/workflows/release.yml/badge.svg)](https://github.com/kizu-org/awscfn/actions)
-[![npm version](https://img.shields.io/npm/v/awscfn.svg)](https://www.npmjs.com/package/awscfn)
-[![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue)]()
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 [![AutoRel](https://img.shields.io/badge/%F0%9F%9A%80%20AutoRel-2D4DDE)](https://github.com/mhweiner/autorel)
 
