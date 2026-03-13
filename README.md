@@ -9,11 +9,12 @@
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 [![AutoRel](https://img.shields.io/badge/%F0%9F%9A%80%20AutoRel-2D4DDE)](https://github.com/mhweiner/autorel)
 
-A lightweight CLI and TypeScript SDK for managing AWS CloudFormation stacks with real-time event streaming and color-coded output.
+A lightweight CLI and TypeScript SDK for managing AWS CloudFormation stacks — create, update, redeploy, and delete — with simple YAML parameter files, real-time event streaming, and color-coded output.
 
 ## Features
 
-- **Real-time event streaming** — Watch CloudFormation resources create/update in real-time
+- **Simple YAML parameters** — Clean, readable YAML files for stack parameters
+- **Real-time event streaming** — Watch CloudFormation resources create/update as they happen
 - **Color-coded output** — Green for success, red for failures, yellow for in-progress
 - **Smart error handling** — Failure reasons from CloudFormation events included in errors
 - **No-changes detection** — Gracefully handles "no changes" as success, not error
