@@ -21,6 +21,37 @@ const version = packageJson.version;
 // Detect CI environment
 const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
 
+const FILE_FLAGS = ['--template', '--params', '-t', '-p'];
+
+function completeFile(current) {
+  const dir = path.dirname(current) || '.';
+  const prefix = path.basename(current);
+  try {
+    const fullDir = path.resolve(process.cwd(), dir);
+    const files = fs.readdirSync(fullDir);
+    const matches = files
+      .filter((f) => f.startsWith(prefix))
+      .map((f) => {
+        const joined = path.join(dir === '.' ? '' : dir, f);
+        try {
+          const stat = fs.statSync(path.resolve(process.cwd(), joined));
+          return stat.isDirectory() ? joined + path.sep : joined;
+        } catch {
+          return joined;
+        }
+      });
+    return matches;
+  } catch {
+    return [];
+  }
+}
+
+function isCompletingFileValue() {
+  const argv = process.argv;
+  const prev = argv[argv.length - 2];
+  return typeof prev === 'string' && FILE_FLAGS.includes(prev);
+}
+
 yargs
   .option('ci', {
     type: 'boolean',
@@ -39,17 +70,33 @@ yargs
     });
   })
   .command(
-    'create-stack <stackName> <templateFile> <paramsFile>',
+    'create-stack',
     'Create a CloudFormation stack',
-    (yargs) => {
-      yargs.positional('stackName', { type: 'string', describe: 'Stack name' });
-      yargs.positional('templateFile', { type: 'string', describe: 'CloudFormation template file' });
-      yargs.positional('paramsFile', { type: 'string', describe: 'Parameter file' });
+    (cmd) => {
+      cmd
+        .option('name', {
+          type: 'string',
+          alias: 'n',
+          describe: 'Stack name',
+          demandOption: true,
+        })
+        .option('template', {
+          type: 'string',
+          alias: 't',
+          describe: 'CloudFormation template file',
+          demandOption: true,
+        })
+        .option('params', {
+          type: 'string',
+          alias: 'p',
+          describe: 'Parameters file (YAML)',
+          demandOption: true,
+        });
     },
-    async ({ stackName, templateFile, paramsFile }) => {
-      log(`Creating stack: ${stackName}...`);
+    async ({ name, template, params }) => {
+      log(`Creating stack: ${name}...`);
       try {
-        await createStack(stackName, templateFile, paramsFile);
+        await createStack(name, template, params);
       } catch (err) {
         errorLog(err.message);
         if (err.data) {
@@ -61,16 +108,27 @@ yargs
     }
   )
   .command(
-    'delete-stack <stackName> <repeatStackName>',
+    'delete-stack',
     'Delete a CloudFormation stack',
-    (yargs) => {
-      yargs.positional('stackName', { type: 'string', describe: 'Stack name' });
-      yargs.positional('repeatStackName', { type: 'string', describe: 'Repeat stack name to confirm deletion' });
+    (cmd) => {
+      cmd
+        .option('name', {
+          type: 'string',
+          alias: 'n',
+          describe: 'Stack name',
+          demandOption: true,
+        })
+        .option('confirm', {
+          type: 'string',
+          alias: 'c',
+          describe: 'Repeat stack name to confirm deletion',
+          demandOption: true,
+        });
     },
-    async ({ stackName, repeatStackName }) => {
-      log(`Deleting stack: ${stackName}...`);
+    async ({ name, confirm }) => {
+      log(`Deleting stack: ${name}...`);
       try {
-        await deleteStack(stackName, repeatStackName);
+        await deleteStack(name, confirm);
       } catch (err) {
         errorLog(err.message);
         process.exit(1);
@@ -78,17 +136,27 @@ yargs
     }
   )
   .command(
-    'redeploy-stack <stackName> <templateFile> <paramsFile>',
-    'Redeploy a CloudFormation stack',
-    (yargs) => {
-      yargs.positional('stackName', { type: 'string', describe: 'Stack name' });
-      yargs.positional('templateFile', { type: 'string', describe: 'CloudFormation template file' });
-      yargs.positional('paramsFile', { type: 'string', describe: 'Parameter file' });
+    'redeploy-stack',
+    'Redeploy a CloudFormation stack (uses existing params)',
+    (cmd) => {
+      cmd
+        .option('name', {
+          type: 'string',
+          alias: 'n',
+          describe: 'Stack name',
+          demandOption: true,
+        })
+        .option('template', {
+          type: 'string',
+          alias: 't',
+          describe: 'CloudFormation template file',
+          demandOption: true,
+        });
     },
-    async ({ stackName, templateFile, paramsFile }) => {
-      log(`Redeploying stack: ${stackName}...`);
+    async ({ name, template }) => {
+      log(`Redeploying stack: ${name}...`);
       try {
-        await redeployStack(stackName, templateFile, paramsFile);
+        await redeployStack(name, template);
       } catch (err) {
         errorLog(err.message);
         if (err.data) {
@@ -100,17 +168,33 @@ yargs
     }
   )
   .command(
-    'update-stack <stackName> <templateFile> <paramsFile>',
+    'update-stack',
     'Update a CloudFormation stack',
-    (yargs) => {
-      yargs.positional('stackName', { type: 'string', describe: 'Stack name' });
-      yargs.positional('templateFile', { type: 'string', describe: 'CloudFormation template file' });
-      yargs.positional('paramsFile', { type: 'string', describe: 'Parameter file' });
+    (cmd) => {
+      cmd
+        .option('name', {
+          type: 'string',
+          alias: 'n',
+          describe: 'Stack name',
+          demandOption: true,
+        })
+        .option('template', {
+          type: 'string',
+          alias: 't',
+          describe: 'CloudFormation template file',
+          demandOption: true,
+        })
+        .option('params', {
+          type: 'string',
+          alias: 'p',
+          describe: 'Parameters file (YAML)',
+          demandOption: true,
+        });
     },
-    async ({ stackName, templateFile, paramsFile }) => {
-      log(`Updating stack: ${stackName}...`);
+    async ({ name, template, params }) => {
+      log(`Updating stack: ${name}...`);
       try {
-        await updateStack(stackName, templateFile, paramsFile);
+        await updateStack(name, template, params);
       } catch (err) {
         errorLog(err.message);
         if (err.data) {
@@ -121,7 +205,17 @@ yargs
       }
     }
   )
-  .completion('completion', 'Generate shell completion script')
+  .completion(
+    'completion',
+    'Generate shell completion script',
+    (current, argv, defaultCompletion, done) => {
+      if (isCompletingFileValue()) {
+        const matches = completeFile(current || '');
+        return done(matches);
+      }
+      defaultCompletion();
+    }
+  )
   .demandCommand(1)
   .fail((msg, err, yargs) => {
     if (msg) {

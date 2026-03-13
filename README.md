@@ -34,10 +34,16 @@ CLI and TypeScript SDK for managing AWS CloudFormation stacks.
 
 ### Shell Completion
 
-Enable tab-completion for commands and options:
+**zsh (recommended)** — native path completion (tab into directories, no extra space after `/`):
 
 ```bash
-# Add to ~/.zshrc (or ~/.bashrc)
+# Add to ~/.zshrc — use path to installed package, e.g. after npm link:
+source $(dirname $(which awscfn))/../completions/zsh
+```
+
+**All shells** — built-in completion (file paths complete but add a space after directories):
+
+```bash
 source <(awscfn completion)
 ```
 
@@ -60,21 +66,27 @@ During stack operations, awscfn streams CloudFormation events in real-time:
 
 When a failure occurs, the error message includes the actual reason from CloudFormation events.
 
-### 🚀 create-stack 
+### 🚀 create-stack
 
 ```bash
-npx awscfn create-stack {STACK_NAME} {TEMPLATE_FILE} {PARAMS_FILE}
+npx awscfn create-stack --name <STACK_NAME> --template <TEMPLATE_FILE> --params <PARAMS_FILE>
+# Short: -n, -t, -p
 ```
 
-Stack name is the name of the stack in CloudFormation. Template file is the path to the CloudFormation template. Params file is the path to the parameters file.
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--name` | `-n` | Stack name |
+| `--template` | `-t` | CloudFormation template file |
+| `--params` | `-p` | Parameters file (YAML) |
 
 ### ⬆️ update-stack
 
 ```bash
-npx awscfn update-stack {STACK_NAME} {TEMPLATE_FILE} {PARAMS_FILE}
+npx awscfn update-stack --name <STACK_NAME> --template <TEMPLATE_FILE> --params <PARAMS_FILE>
+# Short: -n, -t, -p
 ```
 
-Stack name is the name of the stack in CloudFormation. Template file is the path to the CloudFormation template. Params file is the path to the parameters file.
+Same flags as create-stack.
 
 If there are no changes to apply, the command succeeds gracefully:
 ```
@@ -84,26 +96,27 @@ If there are no changes to apply, the command succeeds gracefully:
 ### ♻️ redeploy-stack
 
 ```bash
-npx awscfn redeploy-stack {STACK_NAME} {TEMPLATE_FILE} {PARAMS_FILE}
+npx awscfn redeploy-stack --name <STACK_NAME> --template <TEMPLATE_FILE>
+# Short: -n, -t
 ```
 
-Redeploys a CloudFormation stack with the given name and template file, using the existing stack's parameters. Useful for updating a stack with a new template without having to specify all the parameters again, or for re-deploying a stack that failed to create for some reason.
+Redeploys using the existing stack's parameters. Useful for updating a stack with a new template without re-specifying params, or re-deploying after a failed create.
 
-### 🗑️ `delete-stack`
+### 🗑️ delete-stack
 
-Deletes a CloudFormation stack by name, with a confirmation safeguard.
+Deletes a CloudFormation stack with a confirmation safeguard.
 
 ```bash
-npx awscfn delete-stack {STACK_NAME} {CONFIRM_STACK_NAME}
+npx awscfn delete-stack --name <STACK_NAME> --confirm <STACK_NAME>
+# Short: -n, -c
 ```
 
-- `STACK_NAME`: The name of the stack to delete.
-- `CONFIRM_STACK_NAME`: Must match `STACK_NAME` exactly — used as a safety check to prevent accidental deletion.
+`--confirm` must match `--name` exactly to prevent accidental deletion.
 
 **Example:**
 
 ```bash
-npx awscfn delete-stack my-app-prod my-app-prod
+npx awscfn delete-stack --name my-app-prod --confirm my-app-prod
 ```
 
 If the stack doesn't exist, the command will exit with an error.  

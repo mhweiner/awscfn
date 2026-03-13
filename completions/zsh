@@ -1,0 +1,109 @@
+# Custom zsh completion for awscfn — native path completion (no space after /, tab into dirs).
+# Source this instead of "awscfn completion" for proper file completion:
+#   source /path/to/awscfn/completions/zsh
+# With npm link: source $(dirname $(which awscfn))/../completions/zsh
+# Fix for "no space after directory" from: https://github.com/denoland/deno/pull/32042
+
+#compdef awscfn
+
+# Path completer that uses -S '/' -r '/' for dirs so zsh doesn't add a space (tab into dirs).
+_awscfn_path() {
+  local -a dirs=() other=()
+  local compl
+  # Use _files to get matches, but we need to split dirs vs files and re-present with -S '/' for dirs.
+  # So we use _path_files to populate matches, then re-call _describe with -S '/' for dirs.
+  # Actually _path_files doesn't give us the list. Use glob to build list and _describe.
+  local expl
+  _description -V files expl 'file'
+  local pfx="${(e)PREFIX}" curdir part
+  if [[ "$pfx" == */* ]]; then
+    curdir="${pfx%/*}"
+    part="${pfx##*/}"
+  else
+    curdir="."
+    part="$pfx"
+  fi
+  [[ "$curdir" == . ]] && curdir=""
+  local glob
+  if [[ -n "$curdir" ]]; then
+    glob="${curdir}/"*"${part}"*
+  else
+    glob=*"${part}"*
+  fi
+  for f in ${~glob}(N); do
+    [[ -z "$f" ]] && continue
+    compl="$f"
+    if [[ -d "$f" ]]; then
+      dirs+=("${compl}:directory")
+    else
+      other+=("${compl}:file")
+    fi
+  done
+  # Directories: -S '/' -r '/' so slash is suffix and no space after (Deno PR #32042)
+  [[ -n "$dirs" ]] && _describe -V 'directories' dirs -o nosort -S '/' -r '/'
+  [[ -n "$other" ]] && _describe -V 'files' other -o nosort
+}
+
+local -a commands
+commands=(
+  'create-stack:Create a CloudFormation stack'
+  'update-stack:Update a CloudFormation stack'
+  'redeploy-stack:Redeploy a stack (uses existing params)'
+  'delete-stack:Delete a CloudFormation stack'
+  'completion:Generate shell completion script'
+)
+
+_awscfn-create-stack() {
+  _arguments -s -S : \
+    '(-n --name)'{-n,--name}'[Stack name]:name:' \
+    '(-t --template)'{-t,--template}'[Template file]:template:_awscfn_path' \
+    '(-p --params)'{-p,--params}'[Params file (YAML)]:params:_awscfn_path'
+}
+
+_awscfn-update-stack() {
+  _awscfn-create-stack
+}
+
+_awscfn-redeploy-stack() {
+  _arguments -s -S : \
+    '(-n --name)'{-n,--name}'[Stack name]:name:' \
+    '(-t --template)'{-t,--template}'[Template file]:template:_awscfn_path'
+}
+
+_awscfn-delete-stack() {
+  _arguments -s -S : \
+    '(-n --name)'{-n,--name}'[Stack name]:name:' \
+    '(-c --confirm)'{-c,--confirm}'[Confirm stack name]:confirm:'
+}
+
+_awscfn-completion() {
+  _arguments -s : \
+    '(-): :->noargs'
+}
+
+_awscfn() {
+  local state line
+  _arguments -C -s -S -n \
+    '(-h --help)'{-h,--help}'[Show help]' \
+    '(--version)'--version'[Show version]' \
+    '(--ci)'--ci'[CI mode]' \
+    '(--no-color)'--no-color'[Disable colors]' \
+    ': :->command' \
+    '*:: :->arg'
+
+  case $state in
+    command)
+      _describe 'command' commands
+      ;;
+    arg)
+      local cmd="${line[1]}"
+      if (( $+functions[_awscfn-$cmd] )); then
+        _call_function ret _awscfn-$cmd
+      else
+        _message 'no more arguments'
+      fi
+      ;;
+  esac
+}
+
+_awscfn "$@"
