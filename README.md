@@ -9,17 +9,15 @@
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 [![AutoRel](https://img.shields.io/badge/%F0%9F%9A%80%20AutoRel-2D4DDE)](https://github.com/mhweiner/autorel)
 
-CLI and TypeScript SDK for managing AWS CloudFormation stacks with simple YAML parameter files, real-time event streaming, and color-coded output.
+CLI and TypeScript SDK for managing AWS CloudFormation stacks.
 
-## Features
+## Why awscfn?
 
-- **Simple YAML parameters** — Clean, readable YAML files for stack parameters
-- **Real-time event streaming** — Watch CloudFormation resources create/update as they happen
-- **Color-coded output** — Green for success, red for failures, yellow for in-progress
-- **Smart error handling** — Failure reasons from CloudFormation events included in errors
-- **No-changes detection** — Gracefully handles "no changes" as success, not error
-- **CLI & SDK** — Use from command line or import in your Node.js projects
-- **TypeScript-first** — Full type safety with generics for template parameters
+- **Simple YAML parameters** — No more wrestling with verbose JSON. Just clean, readable YAML files.
+- **See what's happening** — Real-time event streaming shows you exactly what CloudFormation is doing instead of waiting blindly.
+- **Errors that make sense** — When deploys fail, you get the actual error message from CloudFormation, not a cryptic timeout.
+- **CI/CD friendly** — Works great in GitHub Actions with auto-detected CI mode.
+- **CLI & SDK** — Use from command line or import directly in Node.js/TypeScript projects.
 
 ## CLI commands
 
