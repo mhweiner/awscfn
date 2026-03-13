@@ -1,12 +1,25 @@
-# awscfn
+<picture>
+    <source srcset="docs/awscfn-logo-light.svg" media="(prefers-color-scheme: light)">
+    <source srcset="docs/awscfn-logo-dark.svg" media="(prefers-color-scheme: dark)">
+    <img src="docs/awscfn-logo-light.svg" alt="awscfn" width="400">
+</picture>
 
 [![build status](https://github.com/kizu-org/awscfn/actions/workflows/release.yml/badge.svg)](https://github.com/kizu-org/awscfn/actions)
 [![npm version](https://img.shields.io/npm/v/awscfn.svg)](https://www.npmjs.com/package/awscfn)
-[![license](https://img.shields.io/npm/l/awscfn.svg)](https://github.com/kizu-org/awscfn/blob/main/LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-green.svg)](https://nodejs.org/)
+[![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue)]()
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
+[![AutoRel](https://img.shields.io/badge/%F0%9F%9A%80%20AutoRel-2D4DDE)](https://github.com/mhweiner/autorel)
 
-A lightweight CLI and TypeScript SDK for managing AWS CloudFormation stacks. Simplifies create, update, redeploy, and delete operations with real-time event streaming and color-coded output.
+A lightweight CLI and TypeScript SDK for managing AWS CloudFormation stacks with real-time event streaming and color-coded output.
+
+## Features
+
+- **Real-time event streaming** — Watch CloudFormation resources create/update in real-time
+- **Color-coded output** — Green for success, red for failures, yellow for in-progress
+- **Smart error handling** — Failure reasons from CloudFormation events included in errors
+- **No-changes detection** — Gracefully handles "no changes" as success, not error
+- **CLI & SDK** — Use from command line or import in your Node.js projects
+- **TypeScript-first** — Full type safety with generics for template parameters
 
 ## CLI commands
 
