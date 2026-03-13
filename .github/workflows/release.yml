@@ -32,5 +32,4 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
-        run: npx autorel --publish
+        run: npx autorel@^2 --publish
