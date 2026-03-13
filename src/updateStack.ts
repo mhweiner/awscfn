@@ -1,6 +1,7 @@
 import {getParamsFromFile} from './lib/getParamsFromFile';
-import {readFileSync} from 'fs';
+import {readFileSync} from 'node:fs';
 import * as cfn from './lib/cfn';
+import {templateHasParameters} from './lib/templateHasParameters';
 
 // The following must be exported
 const {
@@ -20,8 +21,12 @@ export async function updateStack(
 
     cfn.initCloudFormationClient();
 
-    const params = await getParamsFromFile(paramsFile) as any;
     const template = readFileSync(templateFile, 'utf-8');
+    const needsParams = templateHasParameters(template);
+    const params = needsParams
+        ? (await getParamsFromFile(paramsFile) as Record<string, unknown>)
+        : {};
+
     const existingStack = await cfn.getStackByName(stackName);
 
     if (!existingStack) throw new Error('stack not found, try create command');
@@ -37,7 +42,16 @@ export async function updateStack(
 
     }
 
-    console.log(`updating stack "${stackName}" on account ${AWS_ACCOUNT_ID} with the following params:`, params);
+    if (Object.keys(params).length > 0) {
+
+        console.log(`updating stack "${stackName}" on account ${AWS_ACCOUNT_ID} with the following params:`, params);
+
+    } else {
+
+        console.log(`updating stack "${stackName}" on account ${AWS_ACCOUNT_ID}`);
+
+    }
+
     await cfn.updateStack(existingStack, {body: template, params});
 
 }

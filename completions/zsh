@@ -6,15 +6,9 @@
 
 #compdef awscfn
 
-# Path completer that uses -S '/' -r '/' for dirs so zsh doesn't add a space (tab into dirs).
+# Path completer: dirs get -S '/' -r '/' so no space after (tab into dirs). See Deno PR #32042.
 _awscfn_path() {
   local -a dirs=() other=()
-  local compl
-  # Use _files to get matches, but we need to split dirs vs files and re-present with -S '/' for dirs.
-  # So we use _path_files to populate matches, then re-call _describe with -S '/' for dirs.
-  # Actually _path_files doesn't give us the list. Use glob to build list and _describe.
-  local expl
-  _description -V files expl 'file'
   local pfx="${(e)PREFIX}" curdir part
   if [[ "$pfx" == */* ]]; then
     curdir="${pfx%/*}"
@@ -32,11 +26,10 @@ _awscfn_path() {
   fi
   for f in ${~glob}(N); do
     [[ -z "$f" ]] && continue
-    compl="$f"
     if [[ -d "$f" ]]; then
-      dirs+=("${compl}:directory")
+      dirs+=("${f}:directory")
     else
-      other+=("${compl}:file")
+      other+=("${f}:file")
     fi
   done
   # Directories: -S '/' -r '/' so slash is suffix and no space after (Deno PR #32042)

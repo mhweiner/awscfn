@@ -21,10 +21,12 @@ async function createChangeSet<P extends TemplateParams>(
         TemplateBody: typeof template === 'string' ? template : template.body,
         ChangeSetName: changeSetName,
         ChangeSetType: operation,
-        Parameters: typeof template === 'string' ? undefined : Object.entries(template.params).map(([key, value]) => ({
-            ParameterKey: key,
-            ParameterValue: value,
-        })),
+        Parameters: (typeof template === 'string' || !template.params || Object.keys(template.params).length === 0)
+            ? undefined
+            : Object.entries(template.params).map(([key, value]) => ({
+                ParameterKey: key,
+                ParameterValue: String(value),
+            })),
         Capabilities: ['CAPABILITY_NAMED_IAM'],
     }));
 
