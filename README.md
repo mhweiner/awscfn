@@ -11,6 +11,28 @@
 
 > ⚠️ Requires AWS credentials to be configured in your shell or environment. [Start here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) if you haven't already.
 
+### Global Options
+
+| Flag | Description |
+|------|-------------|
+| `--ci` | Run in CI mode (minimal output, no colors). Auto-detected when `CI=true` or `GITHUB_ACTIONS=true`. |
+| `--no-color` | Disable colored output |
+| `--help`, `-h` | Show help |
+| `--version` | Show version |
+
+### Event Streaming
+
+During stack operations, awscfn streams CloudFormation events in real-time so you can see exactly what's happening:
+
+```
+[CREATE_IN_PROGRESS] AWS::ECS::TaskDefinition (TaskDefinition)
+[CREATE_COMPLETE]    AWS::ECS::TaskDefinition (TaskDefinition)
+[CREATE_IN_PROGRESS] AWS::ECS::Service (Service)
+[CREATE_FAILED]      AWS::ECS::Service (Service) - CannotPullContainerError: image not found
+```
+
+When a failure occurs, the error message includes the actual reason from CloudFormation events, so you don't have to dig through the AWS console.
+
 ### 🚀 create-stack 
 
 ```bash
@@ -111,7 +133,16 @@ The error includes useful context:
   status?: StackStatus;
   params?: TemplateParams;
   sdkError?: Error;
+  failureReason?: string;  // The actual error from CloudFormation events
 }
+```
+
+The error message itself includes the failure reason when available:
+
+```
+💥 Failed to create stack my-stack
+
+Reason: CannotPullContainerError: repository does not exist
 ```
 
 ### 🔁 `updateStack(existingStack: Stack, template: Template<P>): Promise<Stack>`
@@ -163,7 +194,16 @@ If the update fails, a `StackUpdateFailure` is thrown with helpful context:
   terminalStack: Stack;
   status?: StackStatus;
   sdkError?: Error;
+  failureReason?: string;  // The actual error from CloudFormation events
 }
+```
+
+The error message itself includes the failure reason when available:
+
+```
+💥 Failed to update stack my-stack
+
+Reason: Resource handler returned message: "CannotPullContainerError: image not found"
 ```
 
 > ℹ️ Requires AWS credentials in your environment (`AWS_PROFILE`, `AWS_ACCESS_KEY_ID`, etc.).
