@@ -4,6 +4,7 @@ import {
     ExecuteChangeSetCommand,
     waitUntilChangeSetCreateComplete,
 } from '@aws-sdk/client-cloudformation';
+import {dim, gray, symbols} from '../output';
 
 type ChangeSetOperation = 'UPDATE' | 'CREATE';
 
@@ -27,7 +28,7 @@ async function createChangeSet<P extends TemplateParams>(
         Capabilities: ['CAPABILITY_NAMED_IAM'],
     }));
 
-    console.log(`waiting for changeset ${changeSetName} to be ready...`);
+    dim(`  ${symbols.ellipsis} Waiting for changeset to be ready...`);
 
     await waitUntilChangeSetCreateComplete({client: cf, maxWaitTime: 120}, {
         ChangeSetName: changeset.Id,
@@ -43,12 +44,12 @@ export async function createAndExecChangeSet<P extends TemplateParams>(
     operation: ChangeSetOperation
 ): Promise<string> {
 
-    console.log(`creating changeset for ${stackName}...`);
+    dim(`  ${symbols.bullet} Creating changeset ${gray(`(${operation.toLowerCase()})`)}`);
 
     const cf = getCfClient();
     const changeSetId = await createChangeSet(stackName, template, operation);
 
-    console.log('executing changeset...');
+    dim(`  ${symbols.bullet} Executing changeset...`);
 
     await cf.send(new ExecuteChangeSetCommand({
         ChangeSetName: changeSetId,

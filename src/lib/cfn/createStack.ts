@@ -6,13 +6,14 @@ import {TemplateParams, Template} from './index';
 import {waitUntilStackTerminalWithEvents} from './waitUntilStackTerminal';
 import {createAndExecChangeSet} from './executeChangeSet';
 import {toResultAsync} from '../toResult';
+import {info, success, cyan, symbols} from '../output';
 
 export async function createStack<P extends TemplateParams>(
     stackName: string,
     template: Template<P>
 ): Promise<Stack> {
 
-    console.log(`creating stack ${stackName}`);
+    info(`${symbols.arrow} Creating stack ${cyan(stackName)}`);
 
     const [sdkError] = await toResultAsync(createAndExecChangeSet(stackName, template, 'CREATE'));
 
@@ -27,11 +28,12 @@ export async function createStack<P extends TemplateParams>(
     }
 
     const result = await waitUntilStackTerminalWithEvents(stackName);
-    const status = result.stack.StackStatus as StackStatus; // AWS type issue
+    const status = result.stack.StackStatus as StackStatus;
 
     if (result.stack.StackStatus === StackStatus.CREATE_COMPLETE) {
 
-        console.log(`✅ stack ${stackName} created successfully`);
+        success(`${symbols.check} Stack ${cyan(stackName)} created successfully`);
+
         return result.stack;
 
     } else {

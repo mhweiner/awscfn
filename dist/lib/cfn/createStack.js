@@ -6,8 +6,9 @@ const client_cloudformation_1 = require("@aws-sdk/client-cloudformation");
 const waitUntilStackTerminal_1 = require("./waitUntilStackTerminal");
 const executeChangeSet_1 = require("./executeChangeSet");
 const toResult_1 = require("../toResult");
+const output_1 = require("../output");
 async function createStack(stackName, template) {
-    console.log(`creating stack ${stackName}`);
+    (0, output_1.info)(`${output_1.symbols.arrow} Creating stack ${(0, output_1.cyan)(stackName)}`);
     const [sdkError] = await (0, toResult_1.toResultAsync)((0, executeChangeSet_1.createAndExecChangeSet)(stackName, template, 'CREATE'));
     if (sdkError) {
         throw new StackCreateFailure({
@@ -17,9 +18,9 @@ async function createStack(stackName, template) {
         });
     }
     const result = await (0, waitUntilStackTerminal_1.waitUntilStackTerminalWithEvents)(stackName);
-    const status = result.stack.StackStatus; // AWS type issue
+    const status = result.stack.StackStatus;
     if (result.stack.StackStatus === client_cloudformation_1.StackStatus.CREATE_COMPLETE) {
-        console.log(`✅ stack ${stackName} created successfully`);
+        (0, output_1.success)(`${output_1.symbols.check} Stack ${(0, output_1.cyan)(stackName)} created successfully`);
         return result.stack;
     }
     else {

@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createAndExecChangeSet = createAndExecChangeSet;
 const index_1 = require("./index");
 const client_cloudformation_1 = require("@aws-sdk/client-cloudformation");
+const output_1 = require("../output");
 async function createChangeSet(stackName, template, operation) {
     const cf = (0, index_1.getCfClient)();
     const changeSetName = `${stackName}-rev-${Date.now()}`;
@@ -17,17 +18,17 @@ async function createChangeSet(stackName, template, operation) {
         })),
         Capabilities: ['CAPABILITY_NAMED_IAM'],
     }));
-    console.log(`waiting for changeset ${changeSetName} to be ready...`);
+    (0, output_1.dim)(`  ${output_1.symbols.ellipsis} Waiting for changeset to be ready...`);
     await (0, client_cloudformation_1.waitUntilChangeSetCreateComplete)({ client: cf, maxWaitTime: 120 }, {
         ChangeSetName: changeset.Id,
     });
     return changeset.Id;
 }
 async function createAndExecChangeSet(stackName, template, operation) {
-    console.log(`creating changeset for ${stackName}...`);
+    (0, output_1.dim)(`  ${output_1.symbols.bullet} Creating changeset ${(0, output_1.gray)(`(${operation.toLowerCase()})`)}`);
     const cf = (0, index_1.getCfClient)();
     const changeSetId = await createChangeSet(stackName, template, operation);
-    console.log('executing changeset...');
+    (0, output_1.dim)(`  ${output_1.symbols.bullet} Executing changeset...`);
     await cf.send(new client_cloudformation_1.ExecuteChangeSetCommand({
         ChangeSetName: changeSetId,
     }));

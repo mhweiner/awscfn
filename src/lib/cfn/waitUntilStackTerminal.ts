@@ -1,4 +1,4 @@
-import {Stack} from '@aws-sdk/client-cloudformation';
+import {Stack, StackStatus} from '@aws-sdk/client-cloudformation';
 import {getStackByName} from './getStackByName';
 import {isStackTerminal} from './isStackTerminal';
 import {
@@ -8,7 +8,7 @@ import {
     getFailureReason,
     EventStreamState,
 } from './streamStackEvents';
-import {getOutputConfig, dim} from '../output';
+import {getOutputConfig, dim, success, error, gray, symbols} from '../output';
 
 export interface WaitResult {
     stack: Stack
@@ -23,6 +23,16 @@ export async function waitUntilStackTerminal(name: string): Promise<Stack> {
     return result.stack;
 
 }
+
+const FAILURE_STATUSES: StackStatus[] = [
+    StackStatus.CREATE_FAILED,
+    StackStatus.DELETE_FAILED,
+    StackStatus.UPDATE_FAILED,
+    StackStatus.ROLLBACK_COMPLETE,
+    StackStatus.ROLLBACK_FAILED,
+    StackStatus.UPDATE_ROLLBACK_COMPLETE,
+    StackStatus.UPDATE_ROLLBACK_FAILED,
+];
 
 // eslint-disable-next-line max-lines-per-function
 export async function waitUntilStackTerminalWithEvents(name: string): Promise<WaitResult> {
@@ -67,7 +77,7 @@ export async function waitUntilStackTerminalWithEvents(name: string): Promise<Wa
 
                 const elapsed = Math.round((Date.now() - startTime) / 1000);
 
-                dim(`waiting for stack... (${elapsed}s)`);
+                dim(`  ${symbols.ellipsis} Waiting for stack ${gray(`(${elapsed}s)`)}`);
 
             }
 
@@ -76,8 +86,19 @@ export async function waitUntilStackTerminalWithEvents(name: string): Promise<Wa
         } else {
 
             const elapsed = Math.round((Date.now() - startTime) / 1000);
+            const status = stack.StackStatus as StackStatus;
+            const isFailed = FAILURE_STATUSES.includes(status);
+            const statusDisplay = status.replace(/_/g, ' ').toLowerCase();
 
-            console.log(`stack reached ${stack.StackStatus} in ${elapsed}s`);
+            if (isFailed) {
+
+                error(`  ${symbols.cross} Stack reached ${statusDisplay} ${gray(`(${elapsed}s)`)}`);
+
+            } else {
+
+                success(`  ${symbols.check} Stack reached ${statusDisplay} ${gray(`(${elapsed}s)`)}`);
+
+            }
 
             const failureReason = getFailureReason(allEventsList);
 

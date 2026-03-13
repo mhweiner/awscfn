@@ -3,7 +3,7 @@ import {
     StackEvent,
 } from '@aws-sdk/client-cloudformation';
 import {getCfClient} from './index';
-import {getOutputConfig} from '../output';
+import {getOutputConfig, green, red, yellow, cyan, gray, magenta, symbols} from '../output';
 
 const FAILURE_STATUSES = [
     'CREATE_FAILED',
@@ -79,6 +79,41 @@ export async function fetchNewEvents(
 
 }
 
+function formatResourceType(resourceType: string): string {
+
+    // Shorten common AWS resource types for cleaner output
+    const shortened = resourceType
+        .replace('AWS::ECS::', '')
+        .replace('AWS::ElasticLoadBalancingV2::', 'ALB/')
+        .replace('AWS::CloudWatch::', 'CW/')
+        .replace('AWS::IAM::', 'IAM/')
+        .replace('AWS::EC2::', 'EC2/')
+        .replace('AWS::Route53::', 'R53/')
+        .replace('AWS::CloudFormation::', 'CFN/')
+        .replace('AWS::Logs::', 'Logs/')
+        .replace('AWS::SNS::', 'SNS/')
+        .replace('AWS::SQS::', 'SQS/')
+        .replace('AWS::Lambda::', 'Lambda/')
+        .replace('AWS::S3::', 'S3/')
+        .replace('AWS::', '');
+
+    return shortened;
+
+}
+
+function getStatusSymbol(status: string): string {
+
+    const isFailure = FAILURE_STATUSES.some((s) => status.includes(s));
+    const isSuccess = SUCCESS_STATUSES.some((s) => status.includes(s));
+
+    if (isFailure) return symbols.cross;
+    if (isSuccess) return symbols.check;
+
+    return symbols.bullet;
+
+}
+
+// eslint-disable-next-line max-lines-per-function
 export function formatEvent(event: StackEvent): string {
 
     const config = getOutputConfig();
@@ -91,31 +126,43 @@ export function formatEvent(event: StackEvent): string {
     const isSuccess = SUCCESS_STATUSES.some((s) => status.includes(s));
     const isInProgress = IN_PROGRESS_STATUSES.some((s) => status.includes(s));
 
-    let statusStr = status;
-    let reasonStr = reason ? ` - ${reason}` : '';
+    const symbol = getStatusSymbol(status);
+    const shortType = formatResourceType(resourceType);
+
+    let formattedSymbol = symbol;
+    let formattedStatus = status.replace(/_/g, ' ').toLowerCase();
+    let formattedType = shortType;
+    let formattedId = logicalId;
+    let formattedReason = reason ? ` ${symbols.arrow} ${reason}` : '';
 
     if (config.color) {
 
         if (isFailure) {
 
-            statusStr = `\x1b[31m${status}\x1b[0m`; // red
-            reasonStr = reason ? ` - \x1b[31m${reason}\x1b[0m` : '';
+            formattedSymbol = red(symbol);
+            formattedStatus = red(formattedStatus);
+            formattedReason = reason ? ` ${symbols.arrow} ${red(reason)}` : '';
 
         } else if (isSuccess) {
 
-            statusStr = `\x1b[32m${status}\x1b[0m`; // green
+            formattedSymbol = green(symbol);
+            formattedStatus = green(formattedStatus);
 
         } else if (isInProgress) {
 
-            statusStr = `\x1b[33m${status}\x1b[0m`; // yellow
+            formattedSymbol = yellow(symbol);
+            formattedStatus = yellow(formattedStatus);
 
         }
 
+        formattedType = magenta(shortType);
+        formattedId = cyan(logicalId);
+
     }
 
-    const prefix = config.ci ? '' : '  ';
+    const prefix = config.ci ? '  ' : '    ';
 
-    return `${prefix}[${statusStr}] ${resourceType} (${logicalId})${reasonStr}`;
+    return `${prefix}${formattedSymbol} ${formattedType} ${gray('/')} ${formattedId} ${gray('—')} ${formattedStatus}${formattedReason}`;
 
 }
 

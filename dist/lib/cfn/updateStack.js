@@ -9,16 +9,26 @@ const deleteStack_1 = require("./deleteStack");
 const createStack_1 = require("./createStack");
 const isStackTerminal_1 = require("./isStackTerminal");
 const toResult_1 = require("../toResult");
+const output_1 = require("../output");
+function isNoChangesError(error) {
+    const message = error.message || '';
+    return message.includes('didn\'t contain changes')
+        || message.includes('No updates are to be performed');
+}
 // eslint-disable-next-line max-lines-per-function
 async function updateStack(existingStack, template) {
-    console.log(`updating stack ${existingStack.StackName}`);
+    (0, output_1.info)(`${output_1.symbols.arrow} Updating stack ${(0, output_1.cyan)(existingStack.StackName)}`);
     if (!(0, isStackTerminal_1.isStackTerminal)(existingStack))
         throw new Error('stack still in progress');
     if (existingStack.StackStatus === client_cloudformation_1.StackStatus.ROLLBACK_COMPLETE) {
-        console.log(`stack ${existingStack.StackName} is currently in ROLLBACK_COMPLETE and must be deleted first`);
+        (0, output_1.warn)(`Stack ${existingStack.StackName} is in ROLLBACK_COMPLETE, deleting and recreating...`);
         return deleteAndCreateInstead(existingStack, template);
     }
     const [sdkError] = await (0, toResult_1.toResultAsync)((0, executeChangeSet_1.createAndExecChangeSet)(existingStack.StackName, template, 'UPDATE'));
+    if (sdkError && isNoChangesError(sdkError)) {
+        (0, output_1.success)(`${output_1.symbols.check} Stack ${(0, output_1.cyan)(existingStack.StackName)} is up to date (no changes)`);
+        return existingStack;
+    }
     const result = await (0, waitUntilStackTerminal_1.waitUntilStackTerminalWithEvents)(existingStack.StackName);
     const status = result.stack.StackStatus;
     if (sdkError) {
@@ -32,7 +42,7 @@ async function updateStack(existingStack, template) {
         });
     }
     if (status === client_cloudformation_1.StackStatus.UPDATE_COMPLETE) {
-        console.log(`✅ stack ${existingStack.StackName} updated successfully`);
+        (0, output_1.success)(`${output_1.symbols.check} Stack ${(0, output_1.cyan)(existingStack.StackName)} updated successfully`);
         return result.stack;
     }
     else {
