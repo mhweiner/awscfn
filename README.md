@@ -14,7 +14,7 @@ CLI and TypeScript SDK for managing AWS CloudFormation stacks.
 ## Why awscfn?
 
 - **Simple YAML parameters** — No more wrestling with verbose JSON. Just clean, readable YAML files.
-- **See what's happening** — Real-time event streaming shows you exactly what CloudFormation is doing instead of waiting blindly.
+- **See what's happening** — Real-time event streaming in your terminal. No refreshing the console, no juggling `aws cloudformation create-stack` and `describe-stack-events` in another window.
 - **Errors that make sense** — When deploys fail, you get the actual error message from CloudFormation, not a cryptic timeout.
 - **CI/CD friendly** — Works great in GitHub Actions with auto-detected CI mode.
 - **CLI & SDK** — Use from command line or import directly in Node.js/TypeScript projects.
@@ -56,6 +56,16 @@ During stack operations, awscfn streams CloudFormation stack events in real-time
 ```
 
 When a failure occurs, the error message includes the actual reason from CloudFormation events.
+
+### 📋 list-stacks
+
+List all CloudFormation stacks in the current region (name, status, creation date).
+
+```bash
+npx awscfn list-stacks
+```
+
+No options. Output is a table of stack name, status, and creation date.
 
 ### 🚀 create-stack
 
@@ -128,6 +138,19 @@ If the names don't match, the deletion will be aborted.
 ## API Reference
 
 > ⚠️ Requires AWS credentials to be configured in your shell or environment. [Start here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) if you haven't already.
+
+### 📋 `listStacks(): Promise<StackSummary[]>`
+
+Returns all CloudFormation stacks in the current region (paginated). Excludes `DELETE_COMPLETE` (AWS default). Each item is an AWS SDK `StackSummary` (e.g. `StackName`, `StackStatus`, `CreationTime`).
+
+```ts
+import { listStacks } from 'awscfn';
+
+const stacks = await listStacks();
+for (const s of stacks) {
+  console.log(s.StackName, s.StackStatus);
+}
+```
 
 ### 📦 `createStack(stackName: string, template: Template<P>): Promise<Stack>`
 

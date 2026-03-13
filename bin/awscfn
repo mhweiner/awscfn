@@ -6,6 +6,7 @@ const yargs = require('yargs');
 
 const { createStack } = require('../dist/createStack');
 const { deleteStack } = require('../dist/deleteStack');
+const { listStacks } = require('../dist/listStacks');
 const { redeployStack } = require('../dist/redeployStack');
 const { updateStack } = require('../dist/updateStack');
 const { setOutputConfig } = require('../dist/lib/output');
@@ -109,6 +110,14 @@ yargs
       color: !argv.noColor && (process.stdout.isTTY || argv.ci),
     });
   })
+  .command(
+    'list-stacks',
+    'List all CloudFormation stacks',
+    (cmd) => cmd,
+    () => {
+      runCommand(() => listStacks());
+    }
+  )
   .command(
     'create-stack',
     'Create a CloudFormation stack',
