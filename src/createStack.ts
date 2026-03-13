@@ -15,7 +15,7 @@ const {
 export async function createStack(
     stackName: string,
     templateFile: string,
-    paramsFile: string
+    paramsFile: string,
 ): Promise<void> {
 
     cfn.initCloudFormationClient();

@@ -30,3 +30,4 @@ export declare const symbols: {
     warning: string;
     box: string;
 };
+//# sourceMappingURL=output.d.ts.map

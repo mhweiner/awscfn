@@ -33,6 +33,7 @@ async function createStack(stackName, template) {
     }
 }
 class StackCreateFailure extends Error {
+    data;
     constructor(data) {
         const reason = data.failureReason ? `\n\nReason: ${data.failureReason}` : '';
         super(`💥 Failed to create stack ${data.stackName}${reason}`);

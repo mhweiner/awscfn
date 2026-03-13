@@ -43,7 +43,7 @@ export async function waitUntilStackTerminalWithEvents(name: string): Promise<Wa
     const startTime = Date.now();
     let pollCount = 0;
 
-    // eslint-disable-next-line no-constant-condition
+
     while (true) {
 
         const stack = await getStackByName(name, true);

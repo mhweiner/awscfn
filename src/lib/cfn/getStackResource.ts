@@ -3,7 +3,7 @@ import {getCfClient} from '.';
 
 export async function getStackResourcesByLogicalResourceId(
     stackName: string,
-    logicalResourceId: string
+    logicalResourceId: string,
 ): Promise<StackResource[]> {
 
     const cf = getCfClient();

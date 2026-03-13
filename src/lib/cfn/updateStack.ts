@@ -20,7 +20,7 @@ function isNoChangesError(error: Error): boolean {
 // eslint-disable-next-line max-lines-per-function
 export async function updateStack<P extends TemplateParams>(
     existingStack: Stack,
-    template: Template<P>
+    template: Template<P>,
 ): Promise<Stack> {
 
     info(`${symbols.arrow} Updating stack ${cyan(existingStack.StackName as string)}`);
@@ -110,7 +110,7 @@ export class StackUpdateFailure extends Error {
 
 async function deleteAndCreateInstead<P extends TemplateParams>(
     stack: Stack,
-    template: Template<P>
+    template: Template<P>,
 ): Promise<Stack> {
 
     await deleteStack(stack);

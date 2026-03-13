@@ -1,37 +1,26 @@
 {
   "compilerOptions": {
-    "allowJs": true,
-    "target": "ES2020",
-    "moduleResolution": "node",
+    "target": "ES2022",
     "module": "CommonJS",
-    "declaration": true,
-    "lib": [
-      "ES2020",
-    ],
-    "removeComments": false,
-    "emitDecoratorMetadata": false,
-    "experimentalDecorators": false,
-    "sourceMap": true,
-    "pretty": true,
-    "allowUnreachableCode": false,
-    "allowUnusedLabels": false,
-    "noImplicitAny": true,
-    "strict": true,
-    "noImplicitReturns": false,
-    "noImplicitUseStrict": false,
-    "rootDir": "src",
+    "moduleResolution": "node",
+    "lib": ["ES2022"],
     "outDir": "dist",
-    "noEmitHelpers": false,
-    "esModuleInterop": true
+    "rootDir": "src",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false
   },
-  "include":[
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules"
-  ],
-  "ts-node": {
-    "files": true
-  },
-  "compileOnSave":false
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

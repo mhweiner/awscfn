@@ -27,7 +27,6 @@ async function waitUntilStackTerminalWithEvents(name) {
     const allEventsList = [];
     const startTime = Date.now();
     let pollCount = 0;
-    // eslint-disable-next-line no-constant-condition
     while (true) {
         const stack = await (0, getStackByName_1.getStackByName)(name, true);
         if (!stack)

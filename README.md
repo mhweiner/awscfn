@@ -1,11 +1,12 @@
 # awscfn
 
-[![build status](https://github.com/mhweiner/awscfn/actions/workflows/release.yml/badge.svg)](https://github.com/mhweiner/awscfn/actions)
-[![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue)]()
-[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
-[![AutoRel](https://img.shields.io/badge/v2-AutoRel?label=AutoRel&labelColor=0ab5fc&color=grey&link=https%3A%2F%2Fgithub.com%2Fmhweiner%2Fautorel)](https://github.com/mhweiner/autorel)
+[![build status](https://github.com/kizu-org/awscfn/actions/workflows/release.yml/badge.svg)](https://github.com/kizu-org/awscfn/actions)
+[![npm version](https://img.shields.io/npm/v/awscfn.svg)](https://www.npmjs.com/package/awscfn)
+[![license](https://img.shields.io/npm/l/awscfn.svg)](https://github.com/kizu-org/awscfn/blob/main/LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-green.svg)](https://nodejs.org/)
 
-**awscfn** is a lightweight CLI and TypeScript SDK for managing AWS CloudFormation stacks. It simplifies common actions like create, update, redeploy, and delete, and makes working with parameters painless by supporting clean, readable YAML files. Use it in your shell scripts or directly from Node.js projects to streamline CloudFormation workflows.
+A lightweight CLI and TypeScript SDK for managing AWS CloudFormation stacks. Simplifies create, update, redeploy, and delete operations with real-time event streaming and color-coded output.
 
 ## CLI commands
 
@@ -235,14 +236,9 @@ Reason: Resource handler returned message: "CannotPullContainerError: image not 
 
 ## Contributing
 
-- ⭐ Star this repo if you like it!
-- 🐛 Open an [issue](https://github.com/mhweiner/awscfn/issues) for bugs or suggestions.
-- 🤝 Submit a PR to `main` — all tests must pass.
+- Open an [issue](https://github.com/kizu-org/awscfn/issues) for bugs or suggestions
+- Submit a PR to `main` — all tests must pass
 
-## Related Projects
+## License
 
-- [autorel](https://github.com/mhweiner/autorel): Automate semantic releases based on conventional commits.
-- [hoare](https://github.com/mhweiner/hoare): A fast, defensive test runner for JS/TS.
-- [jsout](https://github.com/mhweiner/jsout): A minimal logger for JS/TS, syslog-style.
-- [brek](https://github.com/mhweiner/brek): Typed config loader for dynamic, secret-based configs.
-- [pgsmith](https://github.com/mhweiner/pgsmith): A SQL builder for parameterized queries in PostgreSQL.
+MIT

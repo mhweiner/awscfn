@@ -15,3 +15,4 @@ export declare class StackUpdateFailure extends Error {
     constructor(data: StackUpdateFailureData);
 }
 export {};
+//# sourceMappingURL=updateStack.d.ts.map

@@ -10,7 +10,7 @@ import {info, success, cyan, symbols} from '../output';
 
 export async function createStack<P extends TemplateParams>(
     stackName: string,
-    template: Template<P>
+    template: Template<P>,
 ): Promise<Stack> {
 
     info(`${symbols.arrow} Creating stack ${cyan(stackName)}`);

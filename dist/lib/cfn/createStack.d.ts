@@ -14,3 +14,4 @@ export declare class StackCreateFailure extends Error {
     constructor(data: StackCreationErrorData);
 }
 export {};
+//# sourceMappingURL=createStack.d.ts.map

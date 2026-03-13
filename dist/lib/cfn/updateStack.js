@@ -56,6 +56,7 @@ async function updateStack(existingStack, template) {
     }
 }
 class StackUpdateFailure extends Error {
+    data;
     constructor(data) {
         const reason = data.failureReason ? `\n\nReason: ${data.failureReason}` : '';
         super(`💥 Failed to update stack ${data.stackName}${reason}`);

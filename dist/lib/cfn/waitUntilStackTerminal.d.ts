@@ -7,3 +7,4 @@ export interface WaitResult {
 }
 export declare function waitUntilStackTerminal(name: string): Promise<Stack>;
 export declare function waitUntilStackTerminalWithEvents(name: string): Promise<WaitResult>;
+//# sourceMappingURL=waitUntilStackTerminal.d.ts.map

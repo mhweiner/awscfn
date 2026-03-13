@@ -11,7 +11,7 @@ type ChangeSetOperation = 'UPDATE' | 'CREATE';
 async function createChangeSet<P extends TemplateParams>(
     stackName: string,
     template: Template<P>,
-    operation: ChangeSetOperation
+    operation: ChangeSetOperation,
 ): Promise<string> {
 
     const cf = getCfClient();
@@ -41,7 +41,7 @@ async function createChangeSet<P extends TemplateParams>(
 export async function createAndExecChangeSet<P extends TemplateParams>(
     stackName: string,
     template: Template<P>,
-    operation: ChangeSetOperation
+    operation: ChangeSetOperation,
 ): Promise<string> {
 
     dim(`  ${symbols.bullet} Creating changeset ${gray(`(${operation.toLowerCase()})`)}`);

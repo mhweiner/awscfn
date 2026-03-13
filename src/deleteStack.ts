@@ -12,7 +12,7 @@ const {
  */
 export async function deleteStack(
     stackName: string,
-    repeatStackName: string
+    repeatStackName: string,
 ): Promise<void> {
 
     if (stackName !== repeatStackName) throw new Error('stack name mismatch');
