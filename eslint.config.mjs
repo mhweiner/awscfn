@@ -131,6 +131,7 @@ export default tseslint.config(
             'bin/**',
             'scripts/**',
             '**/*.d.ts',
+            'release.config.js',
         ],
     },
 );

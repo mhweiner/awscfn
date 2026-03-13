@@ -22,31 +22,31 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kizu-org/awscfn.git"
+    "url": "git+https://github.com/mhweiner/awscfn.git"
   },
   "scripts": {
     "prepare": "[ -d dist ] || npm run build",
-    "test": "node --import tsx --test 'src/**/*.spec.ts'",
+    "test": "kizu -f 'src/**/*.spec.ts'",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "build": "tsc && npm run copy-assets",
     "copy-assets": "node scripts/copy-assets.cjs",
-    "validate": "npm run lint && npm run build"
+    "validate": "npm run lint && npm run build && npm test"
   },
   "dependencies": {
-    "@aws-sdk/client-cloudformation": "3.616.0",
-    "js-yaml": "4.1.0",
+    "@aws-sdk/client-cloudformation": "3.1008.0",
+    "js-yaml": "4.1.1",
     "yargs": "17.7.2"
   },
   "devDependencies": {
-    "@eslint/js": "10.0.0",
+    "@eslint/js": "10.0.1",
     "@types/js-yaml": "4.0.9",
-    "@types/node": "22.15.2",
-    "@types/yargs": "17.0.33",
-    "eslint": "9.25.1",
-    "globals": "16.1.0",
-    "tsx": "4.19.4",
-    "typescript": "5.8.3",
-    "typescript-eslint": "8.31.0"
+    "@types/node": "22.19.15",
+    "@types/yargs": "17.0.35",
+    "eslint": "10.0.3",
+    "globals": "17.4.0",
+    "kizu": "5.1.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.57.0"
   }
 }

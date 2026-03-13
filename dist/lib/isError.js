@@ -2,6 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.isError = isError;
 function isError(e) {
-    return e.message !== undefined;
+    return typeof e === 'object' && e !== null && 'message' in e;
 }
 //# sourceMappingURL=isError.js.map

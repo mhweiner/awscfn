@@ -1,5 +1,5 @@
 /**
- * Only used by the CLI
+ * CLI handler: create a new CloudFormation stack.
  */
-export declare function createStack(stackName: string, templateFile: string, paramsFile: string): Promise<void>;
+export declare function createStack(stackName: string, templatePath: string, paramsPath: string): Promise<void>;
 //# sourceMappingURL=createStack.d.ts.map

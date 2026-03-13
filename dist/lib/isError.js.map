@@ -1,1 +1,1 @@
-{"version":3,"file":"isError.js","sourceRoot":"","sources":["../../src/lib/isError.ts"],"names":[],"mappings":";;AAAA,0BAIC;AAJD,SAAgB,OAAO,CAAC,CAAM;IAE1B,OAAO,CAAC,CAAC,OAAO,KAAK,SAAS,CAAC;AAEnC,CAAC"}
+{"version":3,"file":"isError.js","sourceRoot":"","sources":["../../src/lib/isError.ts"],"names":[],"mappings":";;AAAA,0BAIC;AAJD,SAAgB,OAAO,CAAC,CAAU;IAE9B,OAAO,OAAO,CAAC,KAAK,QAAQ,IAAI,CAAC,KAAK,IAAI,IAAI,SAAS,IAAI,CAAC,CAAC;AAEjE,CAAC"}

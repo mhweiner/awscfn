@@ -35,21 +35,20 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteStack = deleteStack;
 const cfn = __importStar(require("./lib/cfn"));
-// The following must be exported
-const { 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-AWS_REGION, AWS_ACCOUNT_ID, } = process.env;
+const log_1 = require("./cli/log");
 /**
- * Only used by the CLI
+ * CLI handler: delete a CloudFormation stack (with confirmation).
  */
-async function deleteStack(stackName, repeatStackName) {
-    if (stackName !== repeatStackName)
+async function deleteStack(stackName, confirmName) {
+    if (stackName !== confirmName) {
         throw new Error('stack name mismatch');
+    }
     cfn.initCloudFormationClient();
-    const existingStack = await cfn.getStackByName(stackName);
-    if (!existingStack)
+    const existing = await cfn.getStackByName(stackName);
+    if (!existing) {
         throw new Error('stack not found');
-    console.log(`deleting stack "${stackName}" on account ${AWS_ACCOUNT_ID}...`);
-    await cfn.deleteStack(existingStack);
+    }
+    (0, log_1.logStackAction)(stackName, 'deleting');
+    await cfn.deleteStack(existing);
 }
 //# sourceMappingURL=deleteStack.js.map

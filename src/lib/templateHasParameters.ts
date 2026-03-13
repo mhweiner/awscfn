@@ -1,7 +1,6 @@
 /**
- * Returns true if the CloudFormation template body declares a Parameters section.
- * Uses a simple pattern match to avoid parsing the full template with js-yaml,
- * which does not understand CloudFormation intrinsics (!Sub, !Ref, etc.).
+ * True if the template declares a Parameters section.
+ * Uses regex to avoid parsing with js-yaml (which doesn't handle CFN intrinsics like !Sub, !Ref).
  */
 export function templateHasParameters(templateBody: string): boolean {
 

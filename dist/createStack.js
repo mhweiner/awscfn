@@ -34,30 +34,23 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createStack = createStack;
-const getParamsFromFile_1 = require("./lib/getParamsFromFile");
-const node_fs_1 = require("node:fs");
 const cfn = __importStar(require("./lib/cfn"));
-// The following must be exported
-const { 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-AWS_REGION, AWS_ACCOUNT_ID, } = process.env;
+const loadTemplateAndParams_1 = require("./cli/loadTemplateAndParams");
+const validateTemplate_1 = require("./cli/validateTemplate");
+const log_1 = require("./cli/log");
 /**
- * Only used by the CLI
+ * CLI handler: create a new CloudFormation stack.
  */
-async function createStack(stackName, templateFile, paramsFile) {
+async function createStack(stackName, templatePath, paramsPath) {
     cfn.initCloudFormationClient();
-    const params = await (0, getParamsFromFile_1.getParamsFromFile)(paramsFile);
-    const template = (0, node_fs_1.readFileSync)(templateFile, 'utf-8');
-    const existingStack = await cfn.getStackByName(stackName);
-    if (existingStack)
+    const { template, params } = await (0, loadTemplateAndParams_1.loadTemplateAndParams)(templatePath, paramsPath);
+    const existing = await cfn.getStackByName(stackName);
+    if (existing) {
         throw new Error('stack already exists, try update command');
-    console.log('validating template...');
-    const validationResult = await cfn.validateTemplate(template);
-    if (validationResult instanceof Error) {
-        console.error('template validation failed:', validationResult);
-        process.exit(1);
     }
-    console.log(`creating stack "${stackName}" on account ${AWS_ACCOUNT_ID} with the following params:`, params);
+    console.log('validating template...');
+    await (0, validateTemplate_1.validateTemplateOrExit)(template);
+    (0, log_1.logStackAction)(stackName, 'creating', params);
     await cfn.createStack(stackName, { body: template, params });
 }
 //# sourceMappingURL=createStack.js.map

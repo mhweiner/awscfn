@@ -34,30 +34,23 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateStack = updateStack;
-const getParamsFromFile_1 = require("./lib/getParamsFromFile");
-const fs_1 = require("fs");
 const cfn = __importStar(require("./lib/cfn"));
-// The following must be exported
-const { 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-AWS_REGION, AWS_ACCOUNT_ID, } = process.env;
+const loadTemplateAndParams_1 = require("./cli/loadTemplateAndParams");
+const validateTemplate_1 = require("./cli/validateTemplate");
+const log_1 = require("./cli/log");
 /**
- * Only used by the CLI
+ * CLI handler: update an existing CloudFormation stack.
  */
-async function updateStack(stackName, templateFile, paramsFile) {
+async function updateStack(stackName, templatePath, paramsPath) {
     cfn.initCloudFormationClient();
-    const params = await (0, getParamsFromFile_1.getParamsFromFile)(paramsFile);
-    const template = (0, fs_1.readFileSync)(templateFile, 'utf-8');
-    const existingStack = await cfn.getStackByName(stackName);
-    if (!existingStack)
+    const { template, params } = await (0, loadTemplateAndParams_1.loadTemplateAndParams)(templatePath, paramsPath);
+    const existing = await cfn.getStackByName(stackName);
+    if (!existing) {
         throw new Error('stack not found, try create command');
-    console.log('validating template...');
-    const validationResult = await cfn.validateTemplate(template);
-    if (validationResult instanceof Error) {
-        console.error('template validation failed:', validationResult);
-        process.exit(1);
     }
-    console.log(`updating stack "${stackName}" on account ${AWS_ACCOUNT_ID} with the following params:`, params);
-    await cfn.updateStack(existingStack, { body: template, params });
+    console.log('validating template...');
+    await (0, validateTemplate_1.validateTemplateOrExit)(template);
+    (0, log_1.logStackAction)(stackName, 'updating', params);
+    await cfn.updateStack(existing, { body: template, params });
 }
 //# sourceMappingURL=updateStack.js.map

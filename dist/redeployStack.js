@@ -34,34 +34,25 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.redeployStack = redeployStack;
-const fs_1 = require("fs");
+const node_fs_1 = require("node:fs");
 const cfn = __importStar(require("./lib/cfn"));
 const getParamsFromStack_1 = require("./lib/cfn/getParamsFromStack");
-// The following must be exported
-const { 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-AWS_REGION, AWS_ACCOUNT_ID, } = process.env;
+const validateTemplate_1 = require("./cli/validateTemplate");
+const log_1 = require("./cli/log");
 /**
- * Redeploys a CloudFormation stack with the given name and template file, using
- * the existing stack's parameters. Useful for updating a stack with a new template
- * without having to specify all the parameters again, or for re-deploying a stack
- * that failed to create for some reason.
- * Only used by the CLI.
+ * CLI handler: redeploy stack with existing params (template only).
  */
-async function redeployStack(stackName, templateFile) {
+async function redeployStack(stackName, templatePath) {
     cfn.initCloudFormationClient();
-    const template = (0, fs_1.readFileSync)(templateFile, 'utf-8');
-    const existingStack = await cfn.getStackByName(stackName);
-    if (!existingStack)
+    const template = (0, node_fs_1.readFileSync)(templatePath, 'utf-8');
+    const existing = await cfn.getStackByName(stackName);
+    if (!existing) {
         throw new Error('stack not found, try create command');
-    const params = (0, getParamsFromStack_1.getParamsFromStack)(existingStack);
-    console.log('stack found, validating template...');
-    const validationResult = await cfn.validateTemplate(template);
-    if (validationResult instanceof Error) {
-        console.error('template validation failed:', validationResult);
-        process.exit(1);
     }
-    console.log(`updating stack "${stackName}" on account ${AWS_ACCOUNT_ID} with the following params:`, params);
-    await cfn.updateStack(existingStack, { body: template, params });
+    const params = (0, getParamsFromStack_1.getParamsFromStack)(existing);
+    console.log('stack found, validating template...');
+    await (0, validateTemplate_1.validateTemplateOrExit)(template);
+    (0, log_1.logStackAction)(stackName, 'updating', params);
+    await cfn.updateStack(existing, { body: template, params });
 }
 //# sourceMappingURL=redeployStack.js.map

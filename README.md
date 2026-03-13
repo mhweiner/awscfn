@@ -4,7 +4,7 @@
     <img src="docs/awscfn-logo-light.svg" alt="awscfn" width="400">
 </picture>
 
-[![build status](https://github.com/kizu-org/awscfn/actions/workflows/release.yml/badge.svg)](https://github.com/kizu-org/awscfn/actions)
+[![build status](https://github.com/mhweiner/awscfn/actions/workflows/release.yml/badge.svg)](https://github.com/mhweiner/awscfn/actions)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue)]()
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 [![AutoRel](https://img.shields.io/badge/%F0%9F%9A%80%20AutoRel-2D4DDE)](https://github.com/mhweiner/autorel)
@@ -260,7 +260,7 @@ Reason: Resource handler returned message: "CannotPullContainerError: image not 
 
 ## Contributing
 
-- Open an [issue](https://github.com/kizu-org/awscfn/issues) for bugs or suggestions
+- Open an [issue](https://github.com/mhweiner/awscfn/issues) for bugs or suggestions
 - Submit a PR to `main` — all tests must pass
 
 ## License

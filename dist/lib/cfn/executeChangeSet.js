@@ -1,21 +1,34 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createAndExecChangeSet = createAndExecChangeSet;
-const index_1 = require("./index");
 const client_cloudformation_1 = require("@aws-sdk/client-cloudformation");
+const index_1 = require("./index");
 const output_1 = require("../output");
+function hasParams(template) {
+    if (typeof template === 'string')
+        return false;
+    const p = template.params;
+    return Boolean(p && Object.keys(p).length > 0);
+}
+function toCfnParameters(params) {
+    return Object.entries(params).map(([key, value]) => ({
+        ParameterKey: key,
+        ParameterValue: String(value),
+    }));
+}
 async function createChangeSet(stackName, template, operation) {
     const cf = (0, index_1.getCfClient)();
     const changeSetName = `${stackName}-rev-${Date.now()}`;
+    const templateBody = typeof template === 'string' ? template : template.body;
+    const parameters = hasParams(template)
+        ? toCfnParameters(template.params)
+        : undefined;
     const changeset = await cf.send(new client_cloudformation_1.CreateChangeSetCommand({
         StackName: stackName,
-        TemplateBody: typeof template === 'string' ? template : template.body,
+        TemplateBody: templateBody,
         ChangeSetName: changeSetName,
         ChangeSetType: operation,
-        Parameters: typeof template === 'string' ? undefined : Object.entries(template.params).map(([key, value]) => ({
-            ParameterKey: key,
-            ParameterValue: value,
-        })),
+        Parameters: parameters,
         Capabilities: ['CAPABILITY_NAMED_IAM'],
     }));
     (0, output_1.dim)(`  ${output_1.symbols.ellipsis} Waiting for changeset to be ready...`);

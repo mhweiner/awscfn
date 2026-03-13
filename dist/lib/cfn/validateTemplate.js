@@ -6,14 +6,10 @@ const _1 = require(".");
 const toResult_1 = require("../toResult");
 async function validateTemplate(tpl) {
     const cf = (0, _1.getCfClient)();
-    const [err] = await (0, toResult_1.toResultAsync)(cf.send(new client_cloudformation_1.ValidateTemplateCommand({
-        TemplateBody: typeof tpl === 'string' ? tpl : tpl.body,
-    })));
-    if (err) {
+    const body = typeof tpl === 'string' ? tpl : tpl.body;
+    const [err] = await (0, toResult_1.toResultAsync)(cf.send(new client_cloudformation_1.ValidateTemplateCommand({ TemplateBody: body })));
+    if (err)
         return err;
-    }
-    else {
-        return true;
-    }
+    return true;
 }
 //# sourceMappingURL=validateTemplate.js.map

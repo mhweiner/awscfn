@@ -1,12 +1,30 @@
-import {Template, TemplateParams, getCfClient} from './index';
 import {
     CreateChangeSetCommand,
     ExecuteChangeSetCommand,
     waitUntilChangeSetCreateComplete,
 } from '@aws-sdk/client-cloudformation';
+import {Template, TemplateParams, getCfClient} from './index';
 import {dim, gray, symbols} from '../output';
 
 type ChangeSetOperation = 'UPDATE' | 'CREATE';
+
+function hasParams<P extends TemplateParams>(template: Template<P>): boolean {
+
+    if (typeof template === 'string') return false;
+    const p = template.params;
+
+    return Boolean(p && Object.keys(p).length > 0);
+
+}
+
+function toCfnParameters(params: Record<string, unknown>): { ParameterKey: string; ParameterValue: string }[] {
+
+    return Object.entries(params).map(([key, value]) => ({
+        ParameterKey: key,
+        ParameterValue: String(value),
+    }));
+
+}
 
 async function createChangeSet<P extends TemplateParams>(
     stackName: string,
@@ -16,17 +34,17 @@ async function createChangeSet<P extends TemplateParams>(
 
     const cf = getCfClient();
     const changeSetName = `${stackName}-rev-${Date.now()}`;
+    const templateBody = typeof template === 'string' ? template : template.body;
+    const parameters = hasParams(template)
+        ? toCfnParameters((template as { params: Record<string, unknown> }).params)
+        : undefined;
+
     const changeset = await cf.send(new CreateChangeSetCommand({
         StackName: stackName,
-        TemplateBody: typeof template === 'string' ? template : template.body,
+        TemplateBody: templateBody,
         ChangeSetName: changeSetName,
         ChangeSetType: operation,
-        Parameters: (typeof template === 'string' || !template.params || Object.keys(template.params).length === 0)
-            ? undefined
-            : Object.entries(template.params).map(([key, value]) => ({
-                ParameterKey: key,
-                ParameterValue: String(value),
-            })),
+        Parameters: parameters,
         Capabilities: ['CAPABILITY_NAMED_IAM'],
     }));
 

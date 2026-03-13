@@ -1,29 +1,31 @@
 import * as cfn from './lib/cfn';
-
-// The following must be exported
-const {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    AWS_REGION,
-    AWS_ACCOUNT_ID,
-} = process.env;
+import {logStackAction} from './cli/log';
 
 /**
- * Only used by the CLI
+ * CLI handler: delete a CloudFormation stack (with confirmation).
  */
 export async function deleteStack(
     stackName: string,
-    repeatStackName: string,
+    confirmName: string,
 ): Promise<void> {
 
-    if (stackName !== repeatStackName) throw new Error('stack name mismatch');
+    if (stackName !== confirmName) {
+
+        throw new Error('stack name mismatch');
+
+    }
 
     cfn.initCloudFormationClient();
 
-    const existingStack = await cfn.getStackByName(stackName);
+    const existing = await cfn.getStackByName(stackName);
 
-    if (!existingStack) throw new Error('stack not found');
+    if (!existing) {
 
-    console.log(`deleting stack "${stackName}" on account ${AWS_ACCOUNT_ID}...`);
-    await cfn.deleteStack(existingStack);
+        throw new Error('stack not found');
+
+    }
+
+    logStackAction(stackName, 'deleting');
+    await cfn.deleteStack(existing);
 
 }

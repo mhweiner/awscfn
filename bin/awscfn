@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const yargs = require('yargs');
 const fs = require('fs');
 const path = require('path');
+const yargs = require('yargs');
 
 const { createStack } = require('../dist/createStack');
 const { deleteStack } = require('../dist/deleteStack');
@@ -10,15 +10,7 @@ const { redeployStack } = require('../dist/redeployStack');
 const { updateStack } = require('../dist/updateStack');
 const { setOutputConfig } = require('../dist/lib/output');
 
-const log = console.log;
-const errorLog = (msg) => log(`\x1b[31mError: ${msg}\x1b[0m`);
-
-// Read version from package.json
-const packageJsonPath = path.resolve(__dirname, '../package.json');
-const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-const version = packageJson.version;
-
-// Detect CI environment
+const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'));
 const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
 
 const FILE_FLAGS = ['--template', '--params', '-t', '-p'];
@@ -29,7 +21,7 @@ function completeFile(current) {
   try {
     const fullDir = path.resolve(process.cwd(), dir);
     const files = fs.readdirSync(fullDir);
-    const matches = files
+    return files
       .filter((f) => f.startsWith(prefix))
       .map((f) => {
         const joined = path.join(dir === '.' ? '' : dir, f);
@@ -40,7 +32,6 @@ function completeFile(current) {
           return joined;
         }
       });
-    return matches;
   } catch {
     return [];
   }
@@ -51,6 +42,40 @@ function isCompletingFileValue() {
   const prev = argv[argv.length - 2];
   return typeof prev === 'string' && FILE_FLAGS.includes(prev);
 }
+
+function logError(msg) {
+  console.log(`\x1b[31mError: ${msg}\x1b[0m`);
+}
+
+function logErrorDetails(data) {
+  if (data) {
+    console.log('\nError details:');
+    console.log(JSON.stringify(data, null, 2));
+  }
+}
+
+async function runCommand(fn) {
+  try {
+    await fn();
+  } catch (err) {
+    logError(err.message);
+    logErrorDetails(err.data);
+    process.exit(1);
+  }
+}
+
+const nameOpt = {
+  name: { type: 'string', alias: 'n', describe: 'Stack name', demandOption: true },
+};
+const templateOpt = {
+  template: { type: 'string', alias: 't', describe: 'CloudFormation template file', demandOption: true },
+};
+const paramsOpt = {
+  params: { type: 'string', alias: 'p', describe: 'Parameters file (YAML)', demandOption: true },
+};
+const confirmOpt = {
+  confirm: { type: 'string', alias: 'c', describe: 'Repeat stack name to confirm deletion', demandOption: true },
+};
 
 yargs
   .option('ci', {
@@ -72,137 +97,37 @@ yargs
   .command(
     'create-stack',
     'Create a CloudFormation stack',
-    (cmd) => {
-      cmd
-        .option('name', {
-          type: 'string',
-          alias: 'n',
-          describe: 'Stack name',
-          demandOption: true,
-        })
-        .option('template', {
-          type: 'string',
-          alias: 't',
-          describe: 'CloudFormation template file',
-          demandOption: true,
-        })
-        .option('params', {
-          type: 'string',
-          alias: 'p',
-          describe: 'Parameters file (YAML)',
-          demandOption: true,
-        });
-    },
-    async ({ name, template, params }) => {
-      log(`Creating stack: ${name}...`);
-      try {
-        await createStack(name, template, params);
-      } catch (err) {
-        errorLog(err.message);
-        if (err.data) {
-          log('\nError details:');
-          log(JSON.stringify(err.data, null, 2));
-        }
-        process.exit(1);
-      }
+    (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt }),
+    ({ name, template, params }) => {
+      console.log(`Creating stack: ${name}...`);
+      runCommand(() => createStack(name, template, params));
     }
   )
   .command(
     'delete-stack',
     'Delete a CloudFormation stack',
-    (cmd) => {
-      cmd
-        .option('name', {
-          type: 'string',
-          alias: 'n',
-          describe: 'Stack name',
-          demandOption: true,
-        })
-        .option('confirm', {
-          type: 'string',
-          alias: 'c',
-          describe: 'Repeat stack name to confirm deletion',
-          demandOption: true,
-        });
-    },
-    async ({ name, confirm }) => {
-      log(`Deleting stack: ${name}...`);
-      try {
-        await deleteStack(name, confirm);
-      } catch (err) {
-        errorLog(err.message);
-        process.exit(1);
-      }
+    (cmd) => cmd.options({ ...nameOpt, ...confirmOpt }),
+    ({ name, confirm }) => {
+      console.log(`Deleting stack: ${name}...`);
+      runCommand(() => deleteStack(name, confirm));
     }
   )
   .command(
     'redeploy-stack',
     'Redeploy a CloudFormation stack (uses existing params)',
-    (cmd) => {
-      cmd
-        .option('name', {
-          type: 'string',
-          alias: 'n',
-          describe: 'Stack name',
-          demandOption: true,
-        })
-        .option('template', {
-          type: 'string',
-          alias: 't',
-          describe: 'CloudFormation template file',
-          demandOption: true,
-        });
-    },
-    async ({ name, template }) => {
-      log(`Redeploying stack: ${name}...`);
-      try {
-        await redeployStack(name, template);
-      } catch (err) {
-        errorLog(err.message);
-        if (err.data) {
-          log('\nError details:');
-          log(JSON.stringify(err.data, null, 2));
-        }
-        process.exit(1);
-      }
+    (cmd) => cmd.options({ ...nameOpt, ...templateOpt }),
+    ({ name, template }) => {
+      console.log(`Redeploying stack: ${name}...`);
+      runCommand(() => redeployStack(name, template));
     }
   )
   .command(
     'update-stack',
     'Update a CloudFormation stack',
-    (cmd) => {
-      cmd
-        .option('name', {
-          type: 'string',
-          alias: 'n',
-          describe: 'Stack name',
-          demandOption: true,
-        })
-        .option('template', {
-          type: 'string',
-          alias: 't',
-          describe: 'CloudFormation template file',
-          demandOption: true,
-        })
-        .option('params', {
-          type: 'string',
-          alias: 'p',
-          describe: 'Parameters file (YAML)',
-          demandOption: true,
-        });
-    },
-    async ({ name, template, params }) => {
-      log(`Updating stack: ${name}...`);
-      try {
-        await updateStack(name, template, params);
-      } catch (err) {
-        errorLog(err.message);
-        if (err.data) {
-          log('\nError details:');
-          log(JSON.stringify(err.data, null, 2));
-        }
-        process.exit(1);
-      }
+    (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt }),
+    ({ name, template, params }) => {
+      console.log(`Updating stack: ${name}...`);
+      runCommand(() => updateStack(name, template, params));
     }
   )
   .completion(
@@ -210,8 +135,7 @@ yargs
     'Generate shell completion script',
     (current, argv, defaultCompletion, done) => {
       if (isCompletingFileValue()) {
-        const matches = completeFile(current || '');
-        return done(matches);
+        return done(completeFile(current || ''));
       }
       defaultCompletion();
     }
@@ -219,13 +143,13 @@ yargs
   .demandCommand(1)
   .fail((msg, err, yargs) => {
     if (msg) {
-      errorLog(msg);
-      log('\n' + yargs.help());
+      logError(msg);
+      console.log('\n' + yargs.help());
     }
     process.exit(1);
   })
   .strict()
   .help()
   .alias('h', 'help')
-  .version(version)
+  .version(pkg.version)
   .argv;
