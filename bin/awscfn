@@ -8,16 +8,36 @@ const { createStack } = require('../dist/createStack');
 const { deleteStack } = require('../dist/deleteStack');
 const { redeployStack } = require('../dist/redeployStack');
 const { updateStack } = require('../dist/updateStack');
+const { setOutputConfig } = require('../dist/lib/output');
 
 const log = console.log;
-const error = (msg) => log(`\x1b[31mError: ${msg}\x1b[0m`);
+const errorLog = (msg) => log(`\x1b[31mError: ${msg}\x1b[0m`);
 
 // Read version from package.json
 const packageJsonPath = path.resolve(__dirname, '../package.json');
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 const version = packageJson.version;
 
+// Detect CI environment
+const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+
 yargs
+  .option('ci', {
+    type: 'boolean',
+    description: 'Run in CI mode (minimal output, no colors)',
+    default: isCI,
+  })
+  .option('no-color', {
+    type: 'boolean',
+    description: 'Disable colored output',
+    default: false,
+  })
+  .middleware((argv) => {
+    setOutputConfig({
+      ci: argv.ci,
+      color: !argv.noColor && !argv.ci && process.stdout.isTTY,
+    });
+  })
   .command(
     'create-stack <stackName> <templateFile> <paramsFile>',
     'Create a CloudFormation stack',
@@ -26,9 +46,18 @@ yargs
       yargs.positional('templateFile', { type: 'string', describe: 'CloudFormation template file' });
       yargs.positional('paramsFile', { type: 'string', describe: 'Parameter file' });
     },
-    ({ stackName, templateFile, paramsFile }) => {
+    async ({ stackName, templateFile, paramsFile }) => {
       log(`Creating stack: ${stackName}...`);
-      createStack(stackName, templateFile, paramsFile);
+      try {
+        await createStack(stackName, templateFile, paramsFile);
+      } catch (err) {
+        errorLog(err.message);
+        if (err.data) {
+          log('\nError details:');
+          log(JSON.stringify(err.data, null, 2));
+        }
+        process.exit(1);
+      }
     }
   )
   .command(
@@ -38,9 +67,14 @@ yargs
       yargs.positional('stackName', { type: 'string', describe: 'Stack name' });
       yargs.positional('repeatStackName', { type: 'string', describe: 'Repeat stack name to confirm deletion' });
     },
-    ({ stackName, repeatStackName }) => {
+    async ({ stackName, repeatStackName }) => {
       log(`Deleting stack: ${stackName}...`);
-      deleteStack(stackName, repeatStackName);
+      try {
+        await deleteStack(stackName, repeatStackName);
+      } catch (err) {
+        errorLog(err.message);
+        process.exit(1);
+      }
     }
   )
   .command(
@@ -51,9 +85,18 @@ yargs
       yargs.positional('templateFile', { type: 'string', describe: 'CloudFormation template file' });
       yargs.positional('paramsFile', { type: 'string', describe: 'Parameter file' });
     },
-    ({ stackName, templateFile, paramsFile }) => {
+    async ({ stackName, templateFile, paramsFile }) => {
       log(`Redeploying stack: ${stackName}...`);
-      redeployStack(stackName, templateFile, paramsFile);
+      try {
+        await redeployStack(stackName, templateFile, paramsFile);
+      } catch (err) {
+        errorLog(err.message);
+        if (err.data) {
+          log('\nError details:');
+          log(JSON.stringify(err.data, null, 2));
+        }
+        process.exit(1);
+      }
     }
   )
   .command(
@@ -64,15 +107,24 @@ yargs
       yargs.positional('templateFile', { type: 'string', describe: 'CloudFormation template file' });
       yargs.positional('paramsFile', { type: 'string', describe: 'Parameter file' });
     },
-    ({ stackName, templateFile, paramsFile }) => {
+    async ({ stackName, templateFile, paramsFile }) => {
       log(`Updating stack: ${stackName}...`);
-      updateStack(stackName, templateFile, paramsFile);
+      try {
+        await updateStack(stackName, templateFile, paramsFile);
+      } catch (err) {
+        errorLog(err.message);
+        if (err.data) {
+          log('\nError details:');
+          log(JSON.stringify(err.data, null, 2));
+        }
+        process.exit(1);
+      }
     }
   )
   .demandCommand(1)
   .fail((msg, err, yargs) => {
     if (msg) {
-      error(msg);
+      errorLog(msg);
       log('\n' + yargs.help());
     }
     process.exit(1);
@@ -80,5 +132,5 @@ yargs
   .strict()
   .help()
   .alias('h', 'help')
-  .version(version) // Automatically pulls version from package.json
+  .version(version)
   .argv;

@@ -31,3 +31,4 @@ export * from './generateStackName';
 export * from './isStackTerminal';
 export * from './waitUntilStackTerminal';
 export * from './getParamFromStack';
+export * from './streamStackEvents';

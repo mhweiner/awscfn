@@ -3,7 +3,7 @@ import {
     StackStatus,
 } from '@aws-sdk/client-cloudformation';
 import {TemplateParams, Template} from './index';
-import {waitUntilStackTerminal} from './waitUntilStackTerminal';
+import {waitUntilStackTerminalWithEvents} from './waitUntilStackTerminal';
 import {createAndExecChangeSet} from './executeChangeSet';
 import {toResultAsync} from '../toResult';
 
@@ -28,13 +28,13 @@ export async function createStack<P extends TemplateParams>(
 
     console.log(`created stack ${stackName} with changeset ${changeSetId}`);
 
-    const stack = await waitUntilStackTerminal(stackName);
-    const status = stack.StackStatus as StackStatus; // AWS type issue
+    const result = await waitUntilStackTerminalWithEvents(stackName);
+    const status = result.stack.StackStatus as StackStatus; // AWS type issue
 
-    if (stack.StackStatus === StackStatus.CREATE_COMPLETE) {
+    if (result.stack.StackStatus === StackStatus.CREATE_COMPLETE) {
 
-        console.log(`✅ stack ${stack.StackId} is CREATE_COMPLETE`);
-        return stack;
+        console.log(`✅ stack ${result.stack.StackId} is CREATE_COMPLETE`);
+        return result.stack;
 
     } else {
 
@@ -42,6 +42,7 @@ export async function createStack<P extends TemplateParams>(
             status,
             stackName,
             params: typeof template === 'string' ? undefined : template.params,
+            failureReason: result.failureReason,
         });
 
     }
@@ -54,14 +55,18 @@ interface StackCreationErrorData {
     stackName: string
     sdkError?: Error
     status?: StackStatus
+    failureReason?: string
 }
 
 export class StackCreateFailure extends Error {
 
     data: StackCreationErrorData;
+
     constructor(data: StackCreationErrorData) {
 
-        super(`💥 Failed to create stack ${data.stackName}`);
+        const reason = data.failureReason ? `\n\nReason: ${data.failureReason}` : '';
+
+        super(`💥 Failed to create stack ${data.stackName}${reason}`);
         Object.setPrototypeOf(this, new.target.prototype); // restore prototype chain
         this.name = this.constructor.name;
         this.data = data;

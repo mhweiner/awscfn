@@ -1,6 +1,6 @@
 import {Stack, StackStatus} from '@aws-sdk/client-cloudformation';
 import {Template, TemplateParams} from './index';
-import {waitUntilStackTerminal} from './waitUntilStackTerminal';
+import {waitUntilStackTerminalWithEvents} from './waitUntilStackTerminal';
 import {createAndExecChangeSet} from './executeChangeSet';
 import {deleteStack} from './deleteStack';
 import {createStack} from './createStack';
@@ -26,33 +26,35 @@ export async function updateStack<P extends TemplateParams>(
     }
 
     const [sdkError, changeSetId] = await toResultAsync(createAndExecChangeSet(existingStack.StackName as string, template, 'UPDATE'));
-    const terminalStack = await waitUntilStackTerminal(existingStack.StackName as string);
-    const status = terminalStack.StackStatus as StackStatus;
+    const result = await waitUntilStackTerminalWithEvents(existingStack.StackName as string);
+    const status = result.stack.StackStatus as StackStatus;
 
     if (sdkError) {
 
         throw new StackUpdateFailure({
             stackName: existingStack.StackName as string,
             originalStack: existingStack,
-            terminalStack,
+            terminalStack: result.stack,
             status,
             sdkError,
+            failureReason: result.failureReason,
         });
 
     }
 
     if (status === StackStatus.UPDATE_COMPLETE) {
 
-        console.log(`✅ updated stack ${terminalStack.StackId} with changeset ${changeSetId}`);
-        return terminalStack;
+        console.log(`✅ updated stack ${result.stack.StackId} with changeset ${changeSetId}`);
+        return result.stack;
 
     } else {
 
         throw new StackUpdateFailure({
             stackName: existingStack.StackName as string,
             originalStack: existingStack,
-            terminalStack,
+            terminalStack: result.stack,
             status,
+            failureReason: result.failureReason,
         });
 
     }
@@ -66,14 +68,18 @@ interface StackUpdateFailureData {
     params?: TemplateParams
     sdkError?: Error
     status?: StackStatus
+    failureReason?: string
 }
 
 export class StackUpdateFailure extends Error {
 
     data: StackUpdateFailureData;
+
     constructor(data: StackUpdateFailureData) {
 
-        super(`💥 Failed to update stack ${data.stackName}`);
+        const reason = data.failureReason ? `\n\nReason: ${data.failureReason}` : '';
+
+        super(`💥 Failed to update stack ${data.stackName}${reason}`);
         Object.setPrototypeOf(this, new.target.prototype); // restore prototype chain
         this.name = this.constructor.name;
         this.data = data;
