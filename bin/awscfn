@@ -54,11 +54,25 @@ function logErrorDetails(data) {
   }
 }
 
+function clarifyAwsError(msg) {
+  if (/region\s+is\s+missing|configuration.*region|Missing required key 'region'/i.test(msg)) {
+    return 'AWS region is not set. Set AWS_REGION or AWS_DEFAULT_REGION, or run `aws configure`.';
+  }
+  if (/credentials|Unable to locate credentials|Token is expired/i.test(msg)) {
+    return 'AWS credentials not found or expired. Set AWS_PROFILE, AWS_ACCESS_KEY_ID/secret, or run `aws configure`.';
+  }
+  return msg;
+}
+
 async function runCommand(fn) {
   try {
     await fn();
   } catch (err) {
-    logError(err.message);
+    const message = clarifyAwsError(err.message);
+    logError(message);
+    if (message !== err.message) {
+      console.log(`\x1b[90m(original: ${err.message})\x1b[0m`);
+    }
     logErrorDetails(err.data);
     process.exit(1);
   }
@@ -71,7 +85,7 @@ const templateOpt = {
   template: { type: 'string', alias: 't', describe: 'CloudFormation template file', demandOption: true },
 };
 const paramsOpt = {
-  params: { type: 'string', alias: 'p', describe: 'Parameters file (YAML)', demandOption: true },
+  params: { type: 'string', alias: 'p', describe: 'Parameters file (YAML). Optional; omit to use template defaults.', demandOption: false },
 };
 const confirmOpt = {
   confirm: { type: 'string', alias: 'c', describe: 'Repeat stack name to confirm deletion', demandOption: true },

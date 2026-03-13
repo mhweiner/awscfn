@@ -9,7 +9,6 @@
   "access": "public",
   "files": [
     "bin",
-    "completions",
     "dist",
     "package.json",
     "package-lock.json"

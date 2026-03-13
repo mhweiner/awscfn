@@ -8,15 +8,16 @@ export interface TemplateAndParams {
 }
 
 /**
- * Load template from file and params (from file only if template declares Parameters).
+ * Load template from file and optional params. If no params file is given, uses {}.
+ * CloudFormation will error if a required parameter has no default.
  */
 export async function loadTemplateAndParams(
     templatePath: string,
-    paramsPath: string,
+    paramsPath: string | undefined,
 ): Promise<TemplateAndParams> {
 
     const template = readFileSync(templatePath, 'utf-8');
-    const params = templateHasParameters(template)
+    const params = (paramsPath && templateHasParameters(template))
         ? ((await getParamsFromFile(paramsPath)) as Record<string, unknown>)
         : {};
 

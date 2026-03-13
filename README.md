@@ -34,18 +34,11 @@ CLI and TypeScript SDK for managing AWS CloudFormation stacks.
 
 ### Shell Completion
 
-**zsh (recommended):**
-
-```bash
-# Add to ~/.zshrc — path to package (e.g. after npm link or global install):
-source $(dirname $(which awscfn))/../completions/zsh
-```
-
-**All shells** — built-in (file paths; may add a space after directories):
-
 ```bash
 source <(awscfn completion)
 ```
+
+Add to your shell config (e.g. `~/.zshrc`) for command and file-path completion.
 
 ### Event Streaming
 

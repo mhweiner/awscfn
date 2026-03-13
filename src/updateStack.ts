@@ -9,7 +9,7 @@ import {logStackAction} from './cli/log';
 export async function updateStack(
     stackName: string,
     templatePath: string,
-    paramsPath: string,
+    paramsPath?: string,
 ): Promise<void> {
 
     cfn.initCloudFormationClient();
