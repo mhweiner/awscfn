@@ -21,7 +21,7 @@
     "url": "git+https://github.com/mhweiner/awscfn.git"
   },
   "scripts": {
-    "prepare": "npm run build",
+    "prepare": "[ -d dist ] || npm run build",
     "test": "hoare 'src/**/*.spec.ts'",
     "lint": "eslint ./ --ext .js,.ts",
     "build": "tsc && tscp"
