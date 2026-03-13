@@ -56,10 +56,10 @@ function logErrorDetails(data) {
 
 function clarifyAwsError(msg) {
   if (/region\s+is\s+missing|configuration.*region|Missing required key 'region'/i.test(msg)) {
-    return 'AWS region is not set. Set AWS_REGION or AWS_DEFAULT_REGION, or run `aws configure`.';
+    return 'AWS region is not set. Set AWS_REGION or AWS_DEFAULT_REGION, or run `aws configure` (or `aws configure sso` if your org uses SSO).';
   }
   if (/credentials|Unable to locate credentials|Token is expired/i.test(msg)) {
-    return 'AWS credentials not found or expired. Set AWS_PROFILE, AWS_ACCESS_KEY_ID/secret, or run `aws configure`.';
+    return 'AWS credentials not found or expired. Set AWS_PROFILE, AWS_ACCESS_KEY_ID/secret, or run `aws configure` (or `aws configure sso` if your org uses SSO).';
   }
   return msg;
 }
