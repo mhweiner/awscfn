@@ -34,13 +34,10 @@ CLI and TypeScript SDK for managing AWS CloudFormation stacks.
 
 ### Shell Completion
 
-Generate shell completion scripts for tab-completion of commands and options:
+Enable tab-completion for commands and options:
 
 ```bash
-# Add to your ~/.zshrc or ~/.bashrc
-awscfn completion >> ~/.zshrc
-
-# Or source directly for current session
+# Add to ~/.zshrc (or ~/.bashrc)
 source <(awscfn completion)
 ```
 
