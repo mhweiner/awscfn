@@ -34,7 +34,7 @@ CLI and TypeScript SDK for managing AWS CloudFormation stacks.
 
 ### Event Streaming
 
-During stack operations, awscfn streams CloudFormation events in real-time with color-coded status:
+During stack operations, awscfn streams CloudFormation events in real-time:
 
 ```
 → Updating stack my-service-stack
@@ -49,16 +49,7 @@ During stack operations, awscfn streams CloudFormation events in real-time with 
 ✓ Stack my-service-stack updated successfully
 ```
 
-Colors:
-- 🟢 **Green** — Success states (complete, created)
-- 🔴 **Red** — Failure states (failed, rollback)
-- 🟡 **Yellow** — In-progress states
-- 🔵 **Cyan** — Resource names
-- ⚫ **Gray** — Metadata (timestamps, elapsed time)
-
-Resource types are shortened for readability: `AWS::ECS::Service` → `ECS/Service`
-
-When a failure occurs, the error message includes the actual reason from CloudFormation events, so you don't have to dig through the AWS console.
+When a failure occurs, the error message includes the actual reason from CloudFormation events.
 
 ### 🚀 create-stack 
 
