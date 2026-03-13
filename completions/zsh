@@ -52,9 +52,9 @@ _awscfn() {
   local state line
   _arguments -C -s -S -n \
     '(-h --help)'{-h,--help}'[Show help]' \
-    '(--version)'--version'[Show version]' \
+    '(-v --version)'{-v,--version}'[Show version]' \
     '(--ci)'--ci'[CI mode]' \
-    '(--no-color)'--no-color'[Disable colors]' \
+    '(-N --no-color)'{-N,--no-color}'[Disable colors]' \
     ': :->command' \
     '*:: :->arg'
 

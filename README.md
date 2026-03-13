@@ -25,12 +25,12 @@ CLI and TypeScript SDK for managing AWS CloudFormation stacks.
 
 ### Global Options
 
-| Flag | Description |
-|------|-------------|
-| `--ci` | Run in CI mode (minimal output, no colors). Auto-detected when `CI=true` or `GITHUB_ACTIONS=true`. |
-| `--no-color` | Disable colored output |
-| `--help`, `-h` | Show help |
-| `--version` | Show version |
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--ci` | — | Run in CI mode (minimal output, no colors). Auto-detected when `CI=true` or `GITHUB_ACTIONS=true`. |
+| `--no-color` | `-N` | Disable colored output |
+| `--help` | `-h` | Show help |
+| `--version` | `-v` | Show version |
 
 ### Shell Completion
 
@@ -82,10 +82,13 @@ npx awscfn create-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
 
 ```bash
 npx awscfn update-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
-# Short: -n, -t, -p
 ```
 
-Same flags as create-stack.
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--name` | `-n` | Stack name |
+| `--template` | `-t` | CloudFormation template file |
+| `--params` | `-p` | Parameters file (YAML) |
 
 If there are no changes to apply, the command succeeds gracefully:
 ```
@@ -96,8 +99,12 @@ If there are no changes to apply, the command succeeds gracefully:
 
 ```bash
 npx awscfn redeploy-stack -n <STACK_NAME> -t <TEMPLATE_FILE>
-# Short: -n, -t
 ```
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--name` | `-n` | Stack name |
+| `--template` | `-t` | CloudFormation template file |
 
 Redeploys using the existing stack's parameters. Useful for updating a stack with a new template without re-specifying params, or re-deploying after a failed create.
 
@@ -107,8 +114,12 @@ Deletes a CloudFormation stack with a confirmation safeguard.
 
 ```bash
 npx awscfn delete-stack -n <STACK_NAME> -c <STACK_NAME>
-# Short: -n, -c
 ```
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--name` | `-n` | Stack name |
+| `--confirm` | `-c` | Repeat stack name to confirm |
 
 `-c` must match `-n` exactly to prevent accidental deletion.
 
