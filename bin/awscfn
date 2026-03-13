@@ -9,7 +9,7 @@ const { deleteStack } = require('../dist/deleteStack');
 const { listStacks } = require('../dist/listStacks');
 const { redeployStack } = require('../dist/redeployStack');
 const { updateStack } = require('../dist/updateStack');
-const { setOutputConfig } = require('../dist/lib/output');
+const { getOutputConfig, setOutputConfig } = require('../dist/lib/output');
 
 const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'));
 const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
@@ -74,7 +74,9 @@ async function runCommand(fn) {
     if (message !== err.message) {
       console.log(`\x1b[90m(original: ${err.message})\x1b[0m`);
     }
-    logErrorDetails(err.data);
+    if (getOutputConfig().verbose) {
+      logErrorDetails(err.data);
+    }
     process.exit(1);
   }
 }
@@ -104,10 +106,17 @@ yargs
     description: 'Disable colored output',
     default: false,
   })
+  .option('verbose', {
+    type: 'boolean',
+    alias: 'V',
+    description: 'Show full error details (e.g. err.data JSON) on failure',
+    default: false,
+  })
   .middleware((argv) => {
     setOutputConfig({
       ci: argv.ci,
       color: !argv.noColor && (process.stdout.isTTY || argv.ci),
+      verbose: argv.verbose,
     });
   })
   .command(
@@ -123,7 +132,6 @@ yargs
     'Create a CloudFormation stack',
     (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt }),
     ({ name, template, params }) => {
-      console.log(`Creating stack: ${name}...`);
       runCommand(() => createStack(name, template, params));
     }
   )
@@ -132,7 +140,6 @@ yargs
     'Delete a CloudFormation stack',
     (cmd) => cmd.options({ ...nameOpt, ...confirmOpt }),
     ({ name, confirm }) => {
-      console.log(`Deleting stack: ${name}...`);
       runCommand(() => deleteStack(name, confirm));
     }
   )
@@ -141,7 +148,6 @@ yargs
     'Redeploy a CloudFormation stack (uses existing params)',
     (cmd) => cmd.options({ ...nameOpt, ...templateOpt }),
     ({ name, template }) => {
-      console.log(`Redeploying stack: ${name}...`);
       runCommand(() => redeployStack(name, template));
     }
   )
@@ -150,7 +156,6 @@ yargs
     'Update a CloudFormation stack',
     (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt }),
     ({ name, template, params }) => {
-      console.log(`Updating stack: ${name}...`);
       runCommand(() => updateStack(name, template, params));
     }
   )
