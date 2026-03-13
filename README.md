@@ -69,8 +69,7 @@ When a failure occurs, the error message includes the actual reason from CloudFo
 ### 🚀 create-stack
 
 ```bash
-npx awscfn create-stack --name <STACK_NAME> --template <TEMPLATE_FILE> --params <PARAMS_FILE>
-# Short: -n, -t, -p
+npx awscfn create-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
 ```
 
 | Flag | Short | Description |
@@ -82,7 +81,7 @@ npx awscfn create-stack --name <STACK_NAME> --template <TEMPLATE_FILE> --params 
 ### ⬆️ update-stack
 
 ```bash
-npx awscfn update-stack --name <STACK_NAME> --template <TEMPLATE_FILE> --params <PARAMS_FILE>
+npx awscfn update-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
 # Short: -n, -t, -p
 ```
 
@@ -96,7 +95,7 @@ If there are no changes to apply, the command succeeds gracefully:
 ### ♻️ redeploy-stack
 
 ```bash
-npx awscfn redeploy-stack --name <STACK_NAME> --template <TEMPLATE_FILE>
+npx awscfn redeploy-stack -n <STACK_NAME> -t <TEMPLATE_FILE>
 # Short: -n, -t
 ```
 
@@ -107,16 +106,16 @@ Redeploys using the existing stack's parameters. Useful for updating a stack wit
 Deletes a CloudFormation stack with a confirmation safeguard.
 
 ```bash
-npx awscfn delete-stack --name <STACK_NAME> --confirm <STACK_NAME>
+npx awscfn delete-stack -n <STACK_NAME> -c <STACK_NAME>
 # Short: -n, -c
 ```
 
-`--confirm` must match `--name` exactly to prevent accidental deletion.
+`-c` must match `-n` exactly to prevent accidental deletion.
 
 **Example:**
 
 ```bash
-npx awscfn delete-stack --name my-app-prod --confirm my-app-prod
+npx awscfn delete-stack -n my-app-prod -c my-app-prod
 ```
 
 If the stack doesn't exist, the command will exit with an error.  

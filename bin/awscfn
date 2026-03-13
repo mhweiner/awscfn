@@ -85,6 +85,7 @@ yargs
   })
   .option('no-color', {
     type: 'boolean',
+    alias: 'N',
     description: 'Disable colored output',
     default: false,
   })
@@ -152,4 +153,5 @@ yargs
   .help()
   .alias('h', 'help')
   .version(pkg.version)
+  .alias('v', 'version')
   .argv;
