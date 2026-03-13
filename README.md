@@ -22,14 +22,29 @@
 
 ### Event Streaming
 
-During stack operations, awscfn streams CloudFormation events in real-time so you can see exactly what's happening:
+During stack operations, awscfn streams CloudFormation events in real-time with color-coded status:
 
 ```
-[CREATE_IN_PROGRESS] AWS::ECS::TaskDefinition (TaskDefinition)
-[CREATE_COMPLETE]    AWS::ECS::TaskDefinition (TaskDefinition)
-[CREATE_IN_PROGRESS] AWS::ECS::Service (Service)
-[CREATE_FAILED]      AWS::ECS::Service (Service) - CannotPullContainerError: image not found
+→ Updating stack my-service-stack
+  ● Creating changeset (update)
+  … Waiting for changeset to be ready...
+  ● Executing changeset...
+    ● ECS/TaskDefinition / TaskDef — update in progress
+    ✓ ECS/TaskDefinition / TaskDef — update complete
+    ● ECS/Service / MyService — update in progress
+    ✓ ECS/Service / MyService — update complete
+  ✓ Stack reached update complete (45s)
+✓ Stack my-service-stack updated successfully
 ```
+
+Colors:
+- 🟢 **Green** — Success states (complete, created)
+- 🔴 **Red** — Failure states (failed, rollback)
+- 🟡 **Yellow** — In-progress states
+- 🔵 **Cyan** — Resource names
+- ⚫ **Gray** — Metadata (timestamps, elapsed time)
+
+Resource types are shortened for readability: `AWS::ECS::Service` → `ECS/Service`
 
 When a failure occurs, the error message includes the actual reason from CloudFormation events, so you don't have to dig through the AWS console.
 
@@ -47,7 +62,12 @@ Stack name is the name of the stack in CloudFormation. Template file is the path
 npx awscfn update-stack {STACK_NAME} {TEMPLATE_FILE} {PARAMS_FILE}
 ```
 
-Stack name is the name of the stack in CloudFormation. Template file is the path to the CloudFormation template. Params file is the path to the parameters file. There must be changes to the template in order for the stack to update.
+Stack name is the name of the stack in CloudFormation. Template file is the path to the CloudFormation template. Params file is the path to the parameters file.
+
+If there are no changes to apply, the command succeeds gracefully:
+```
+✓ Stack my-stack is up to date (no changes)
+```
 
 ### ♻️ redeploy-stack
 
@@ -178,6 +198,9 @@ if (existing) {
 - If the stack is in `ROLLBACK_COMPLETE`, it:
   - Deletes the stack
   - Re-creates it using the same template (via `createStack`)
+- If there are **no changes** to apply:
+  - Returns the existing stack immediately (no error)
+  - Outputs: `✓ Stack my-stack is up to date (no changes)`
 - Otherwise:
   - Creates and executes an **update-type change set**
   - Waits for the stack to reach a terminal state
