@@ -25,7 +25,7 @@ export async function updateStack<P extends TemplateParams>(
 
     }
 
-    const [sdkError, changeSetId] = await toResultAsync(createAndExecChangeSet(existingStack.StackName as string, template, 'UPDATE'));
+    const [sdkError] = await toResultAsync(createAndExecChangeSet(existingStack.StackName as string, template, 'UPDATE'));
     const result = await waitUntilStackTerminalWithEvents(existingStack.StackName as string);
     const status = result.stack.StackStatus as StackStatus;
 
@@ -44,7 +44,7 @@ export async function updateStack<P extends TemplateParams>(
 
     if (status === StackStatus.UPDATE_COMPLETE) {
 
-        console.log(`✅ updated stack ${result.stack.StackId} with changeset ${changeSetId}`);
+        console.log(`✅ stack ${existingStack.StackName} updated successfully`);
         return result.stack;
 
     } else {

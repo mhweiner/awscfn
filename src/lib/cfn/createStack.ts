@@ -14,7 +14,7 @@ export async function createStack<P extends TemplateParams>(
 
     console.log(`creating stack ${stackName}`);
 
-    const [sdkError, changeSetId] = await toResultAsync(createAndExecChangeSet(stackName, template, 'CREATE'));
+    const [sdkError] = await toResultAsync(createAndExecChangeSet(stackName, template, 'CREATE'));
 
     if (sdkError) {
 
@@ -26,14 +26,12 @@ export async function createStack<P extends TemplateParams>(
 
     }
 
-    console.log(`created stack ${stackName} with changeset ${changeSetId}`);
-
     const result = await waitUntilStackTerminalWithEvents(stackName);
     const status = result.stack.StackStatus as StackStatus; // AWS type issue
 
     if (result.stack.StackStatus === StackStatus.CREATE_COMPLETE) {
 
-        console.log(`✅ stack ${result.stack.StackId} is CREATE_COMPLETE`);
+        console.log(`✅ stack ${stackName} created successfully`);
         return result.stack;
 
     } else {

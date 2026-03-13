@@ -18,7 +18,7 @@ async function updateStack(existingStack, template) {
         console.log(`stack ${existingStack.StackName} is currently in ROLLBACK_COMPLETE and must be deleted first`);
         return deleteAndCreateInstead(existingStack, template);
     }
-    const [sdkError, changeSetId] = await (0, toResult_1.toResultAsync)((0, executeChangeSet_1.createAndExecChangeSet)(existingStack.StackName, template, 'UPDATE'));
+    const [sdkError] = await (0, toResult_1.toResultAsync)((0, executeChangeSet_1.createAndExecChangeSet)(existingStack.StackName, template, 'UPDATE'));
     const result = await (0, waitUntilStackTerminal_1.waitUntilStackTerminalWithEvents)(existingStack.StackName);
     const status = result.stack.StackStatus;
     if (sdkError) {
@@ -32,7 +32,7 @@ async function updateStack(existingStack, template) {
         });
     }
     if (status === client_cloudformation_1.StackStatus.UPDATE_COMPLETE) {
-        console.log(`✅ updated stack ${result.stack.StackId} with changeset ${changeSetId}`);
+        console.log(`✅ stack ${existingStack.StackName} updated successfully`);
         return result.stack;
     }
     else {

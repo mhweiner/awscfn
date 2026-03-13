@@ -15,6 +15,8 @@ async function waitUntilStackTerminalWithEvents(name) {
     const config = (0, output_1.getOutputConfig)();
     const eventState = (0, streamStackEvents_1.createEventStreamState)();
     const allEventsList = [];
+    const startTime = Date.now();
+    let pollCount = 0;
     // eslint-disable-next-line no-constant-condition
     while (true) {
         const stack = await (0, getStackByName_1.getStackByName)(name, true);
@@ -32,18 +34,17 @@ async function waitUntilStackTerminalWithEvents(name) {
             // Ignore event fetch errors - stack status is the source of truth
         }
         if (!(0, isStackTerminal_1.isStackTerminal)(stack)) {
-            // keep waiting
-            if (config.ci) {
-                console.log(`stack is still in progress with status: ${stack.StackStatus}`);
-            }
-            else {
-                (0, output_1.dim)(`waiting... (${stack.StackStatus})`);
+            pollCount++;
+            // Only show waiting message every 6 polls (60 seconds) in CI, or if no events shown
+            if (!config.ci || (pollCount % 6 === 0 && allEventsList.length === 0)) {
+                const elapsed = Math.round((Date.now() - startTime) / 1000);
+                (0, output_1.dim)(`waiting for stack... (${elapsed}s)`);
             }
             await new Promise((resolve) => setTimeout(resolve, 10000));
         }
         else {
-            // we're done
-            console.log(`stack is terminal with status: ${stack.StackStatus}`);
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            console.log(`stack reached ${stack.StackStatus} in ${elapsed}s`);
             const failureReason = (0, streamStackEvents_1.getFailureReason)(allEventsList);
             return {
                 stack,

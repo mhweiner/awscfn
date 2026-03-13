@@ -30,6 +30,8 @@ export async function waitUntilStackTerminalWithEvents(name: string): Promise<Wa
     const config = getOutputConfig();
     const eventState = createEventStreamState();
     const allEventsList: import('@aws-sdk/client-cloudformation').StackEvent[] = [];
+    const startTime = Date.now();
+    let pollCount = 0;
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -58,14 +60,14 @@ export async function waitUntilStackTerminalWithEvents(name: string): Promise<Wa
 
         if (!isStackTerminal(stack)) {
 
-            // keep waiting
-            if (config.ci) {
+            pollCount++;
 
-                console.log(`stack is still in progress with status: ${stack.StackStatus}`);
+            // Only show waiting message every 6 polls (60 seconds) in CI, or if no events shown
+            if (!config.ci || (pollCount % 6 === 0 && allEventsList.length === 0)) {
 
-            } else {
+                const elapsed = Math.round((Date.now() - startTime) / 1000);
 
-                dim(`waiting... (${stack.StackStatus})`);
+                dim(`waiting for stack... (${elapsed}s)`);
 
             }
 
@@ -73,8 +75,9 @@ export async function waitUntilStackTerminalWithEvents(name: string): Promise<Wa
 
         } else {
 
-            // we're done
-            console.log(`stack is terminal with status: ${stack.StackStatus}`);
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+
+            console.log(`stack reached ${stack.StackStatus} in ${elapsed}s`);
 
             const failureReason = getFailureReason(allEventsList);
 

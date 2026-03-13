@@ -14,10 +14,11 @@ async function createChangeSet<P extends TemplateParams>(
 ): Promise<string> {
 
     const cf = getCfClient();
+    const changeSetName = `${stackName}-rev-${Date.now()}`;
     const changeset = await cf.send(new CreateChangeSetCommand({
         StackName: stackName,
         TemplateBody: typeof template === 'string' ? template : template.body,
-        ChangeSetName: `${stackName}-rev-${Date.now()}`,
+        ChangeSetName: changeSetName,
         ChangeSetType: operation,
         Parameters: typeof template === 'string' ? undefined : Object.entries(template.params).map(([key, value]) => ({
             ParameterKey: key,
@@ -26,7 +27,7 @@ async function createChangeSet<P extends TemplateParams>(
         Capabilities: ['CAPABILITY_NAMED_IAM'],
     }));
 
-    console.log(changeset);
+    console.log(`waiting for changeset ${changeSetName} to be ready...`);
 
     await waitUntilChangeSetCreateComplete({client: cf, maxWaitTime: 120}, {
         ChangeSetName: changeset.Id,
@@ -42,12 +43,12 @@ export async function createAndExecChangeSet<P extends TemplateParams>(
     operation: ChangeSetOperation
 ): Promise<string> {
 
-    console.log(`creating changeset for ${stackName} with operation ${operation}`);
+    console.log(`creating changeset for ${stackName}...`);
 
     const cf = getCfClient();
     const changeSetId = await createChangeSet(stackName, template, operation);
 
-    console.log(`executing changeset ${changeSetId}`);
+    console.log('executing changeset...');
 
     await cf.send(new ExecuteChangeSetCommand({
         ChangeSetName: changeSetId,
