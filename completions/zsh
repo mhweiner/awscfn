@@ -1,40 +1,14 @@
-# Custom zsh completion for awscfn — native path completion (no space after /, tab into dirs).
-# Source this instead of "awscfn completion" for proper file completion:
-#   source /path/to/awscfn/completions/zsh
-# With npm link: source $(dirname $(which awscfn))/../completions/zsh
-# Fix for "no space after directory" from: https://github.com/denoland/deno/pull/32042
+# Custom zsh completion for awscfn. Source this file (not "awscfn completion") for path completion.
+# E.g. in ~/.zshrc: source $(dirname $(which awscfn))/../completions/zsh
 
 #compdef awscfn
 
-# Path completer: dirs get -S '/' -r '/' so no space after (tab into dirs). See Deno PR #32042.
+# No space after completion so you can tab through directory trees (e.g. -t src/<tab><tab>).
+zstyle ':completion:*:awscfn:*' add-space false
+
+# Use zsh's native path completion so dirs get / and tab-into-dirs works.
 _awscfn_path() {
-  local -a dirs=() other=()
-  local pfx="${(e)PREFIX}" curdir part
-  if [[ "$pfx" == */* ]]; then
-    curdir="${pfx%/*}"
-    part="${pfx##*/}"
-  else
-    curdir="."
-    part="$pfx"
-  fi
-  [[ "$curdir" == . ]] && curdir=""
-  local glob
-  if [[ -n "$curdir" ]]; then
-    glob="${curdir}/"*"${part}"*
-  else
-    glob=*"${part}"*
-  fi
-  for f in ${~glob}(N); do
-    [[ -z "$f" ]] && continue
-    if [[ -d "$f" ]]; then
-      dirs+=("${f}:directory")
-    else
-      other+=("${f}:file")
-    fi
-  done
-  # Directories: -S '/' -r '/' so slash is suffix and no space after (Deno PR #32042)
-  [[ -n "$dirs" ]] && _describe -V 'directories' dirs -o nosort -S '/' -r '/'
-  [[ -n "$other" ]] && _describe -V 'files' other -o nosort
+  _files
 }
 
 local -a commands

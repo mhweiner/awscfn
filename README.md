@@ -1,7 +1,7 @@
 <picture>
     <source srcset="docs/awscfn-logo-light.svg" media="(prefers-color-scheme: light)">
     <source srcset="docs/awscfn-logo-dark.svg" media="(prefers-color-scheme: dark)">
-    <img src="docs/awscfn-logo-light.svg" alt="awscfn" width="400">
+    <img src="docs/awscfn-logo-light.svg" alt="awscfn" width="200">
 </picture>
 
 [![build status](https://github.com/mhweiner/awscfn/actions/workflows/release.yml/badge.svg)](https://github.com/mhweiner/awscfn/actions)
@@ -34,14 +34,14 @@ CLI and TypeScript SDK for managing AWS CloudFormation stacks.
 
 ### Shell Completion
 
-**zsh (recommended)** — native path completion (tab into directories, no extra space after `/`):
+**zsh (recommended):**
 
 ```bash
-# Add to ~/.zshrc — use path to installed package, e.g. after npm link:
+# Add to ~/.zshrc — path to package (e.g. after npm link or global install):
 source $(dirname $(which awscfn))/../completions/zsh
 ```
 
-**All shells** — built-in completion (file paths complete but add a space after directories):
+**All shells** — built-in (file paths; may add a space after directories):
 
 ```bash
 source <(awscfn completion)
