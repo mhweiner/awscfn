@@ -6,7 +6,7 @@ import {
 import {Template, TemplateParams, getCfClient} from './index';
 import {dim, getOutputConfig, gray, startSpinner, symbols} from '../output';
 
-type ChangeSetOperation = 'UPDATE' | 'CREATE';
+export type ChangeSetOperation = 'UPDATE' | 'CREATE';
 
 function hasParams<P extends TemplateParams>(template: Template<P>): boolean {
 
@@ -26,8 +26,10 @@ function toCfnParameters(params: Record<string, unknown>): { ParameterKey: strin
 
 }
 
-// eslint-disable-next-line max-lines-per-function
-async function createChangeSet<P extends TemplateParams>(
+/**
+ * Create a change set and return its ARN/id (does not wait).
+ */
+export async function submitChangeSetRequest<P extends TemplateParams>(
     stackName: string,
     template: Template<P>,
     operation: ChangeSetOperation,
@@ -49,6 +51,16 @@ async function createChangeSet<P extends TemplateParams>(
         Capabilities: ['CAPABILITY_NAMED_IAM', 'CAPABILITY_AUTO_EXPAND'],
     }));
 
+    return changeset.Id as string;
+
+}
+
+/**
+ * Wait until the change set finishes building ({@link waitUntilChangeSetCreateComplete}) with spinner.
+ */
+export async function waitForChangeSetBuild(changeSetId: string): Promise<void> {
+
+    const cf = getCfClient();
     const cfg = getOutputConfig();
     const stopSpinner = cfg.ci ? null : startSpinner();
 
@@ -57,7 +69,7 @@ async function createChangeSet<P extends TemplateParams>(
     try {
 
         await waitUntilChangeSetCreateComplete({client: cf, maxWaitTime: 120}, {
-            ChangeSetName: changeset.Id,
+            ChangeSetName: changeSetId,
         });
 
     } finally {
@@ -66,7 +78,20 @@ async function createChangeSet<P extends TemplateParams>(
 
     }
 
-    return changeset.Id as string;
+}
+
+
+async function createChangeSetAndWait<P extends TemplateParams>(
+    stackName: string,
+    template: Template<P>,
+    operation: ChangeSetOperation,
+): Promise<string> {
+
+    const changeSetId = await submitChangeSetRequest(stackName, template, operation);
+
+    await waitForChangeSetBuild(changeSetId);
+
+    return changeSetId;
 
 }
 
@@ -79,7 +104,7 @@ export async function createAndExecChangeSet<P extends TemplateParams>(
     dim(`  ${symbols.bullet} Creating changeset ${gray(`(${operation.toLowerCase()})`)}`);
 
     const cf = getCfClient();
-    const changeSetId = await createChangeSet(stackName, template, operation);
+    const changeSetId = await createChangeSetAndWait(stackName, template, operation);
 
     dim(`  ${symbols.bullet} Executing changeset...`);
 

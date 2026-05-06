@@ -25,6 +25,7 @@ export function getCfClient(): CloudFormationClient {
 export * from './createStack';
 export * from './getStackByName';
 export * from './listStacks';
+export * from './previewChangeSet';
 export * from './updateStack';
 export * from './deleteStack';
 export * from './validateTemplate';
