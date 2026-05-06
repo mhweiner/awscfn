@@ -91,6 +91,15 @@ const templateOpt = {
 const paramsOpt = {
   params: { type: 'string', alias: 'p', describe: 'Parameters file (YAML). Optional; omit to use template defaults.', demandOption: false },
 };
+const createIfMissingOpt = {
+  createIfMissing: {
+    type: 'boolean',
+    alias: 'm',
+    describe: 'If the stack does not exist, create it instead of erroring (update-stack only)',
+    demandOption: false,
+    default: false,
+  },
+};
 const confirmOpt = {
   confirm: { type: 'string', alias: 'c', describe: 'Repeat stack name to confirm deletion', demandOption: true },
 };
@@ -156,9 +165,9 @@ yargs
   .command(
     'update-stack',
     'Update a CloudFormation stack',
-    (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt }),
-    ({ name, template, params }) => {
-      runCommand(() => updateStack(name, template, params));
+    (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt, ...createIfMissingOpt }),
+    ({ name, template, params, createIfMissing }) => {
+      runCommand(() => updateStack(name, template, params, createIfMissing));
     }
   )
   .command(
