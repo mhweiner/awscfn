@@ -11,11 +11,12 @@ export async function updateStack(
     templatePath: string,
     paramsPath?: string,
     create: boolean = false,
+    overrides?: Record<string, string>,
 ): Promise<void> {
 
     cfn.initCloudFormationClient();
 
-    const {template, params} = await loadTemplateAndParams(templatePath, paramsPath);
+    const {template, params} = await loadTemplateAndParams(templatePath, paramsPath, overrides);
     const existing = await cfn.getStackByName(stackName);
 
     if (!existing) {

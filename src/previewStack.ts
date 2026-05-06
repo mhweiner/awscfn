@@ -12,11 +12,12 @@ export async function previewStack(
     stackName: string,
     templatePath: string,
     paramsPath?: string,
+    overrides?: Record<string, string>,
 ): Promise<void> {
 
     cfn.initCloudFormationClient();
 
-    const {template, params} = await loadTemplateAndParams(templatePath, paramsPath);
+    const {template, params} = await loadTemplateAndParams(templatePath, paramsPath, overrides);
     const existing = await cfn.getStackByName(stackName);
 
     if (existing?.StackStatus === StackStatus.ROLLBACK_COMPLETE) {
