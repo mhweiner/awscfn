@@ -18,9 +18,19 @@ export async function loadTemplateAndParams(
 ): Promise<TemplateAndParams> {
 
     const template = readFileSync(templatePath, 'utf-8');
+    const hasParameters = templateHasParameters(template);
     const fileParams = (paramsPath && templateHasParameters(template))
         ? ((await getParamsFromFile(paramsPath)) as Record<string, unknown>)
         : {};
+
+    if (!hasParameters && overrides && Object.keys(overrides).length > 0) {
+
+        throw new Error(
+            'Template does not declare Parameters, but --set was provided. '
+            + 'Remove --set or add a Parameters section to the template.',
+        );
+
+    }
 
     const params = {
         ...fileParams,
