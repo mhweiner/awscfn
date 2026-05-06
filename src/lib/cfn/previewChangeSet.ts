@@ -4,7 +4,7 @@ import {
     type Change,
     type DescribeChangeSetOutput,
 } from '@aws-sdk/client-cloudformation';
-import {formatChangeSetPreviewLines} from '../../cli/formatChangeSet';
+import {formatChangeSetPreviewLines} from '../formatChangeSet';
 import {
     submitChangeSetRequest,
     waitForChangeSetBuild,
@@ -23,6 +23,7 @@ function isNoChangesOutcome(desc: DescribeChangeSetOutput): boolean {
 
 }
 
+/** Merge paginated {@link DescribeChangeSetCommand} results so large change lists are complete. */
 async function describeChangeSetPaginated(changeSetId: string): Promise<DescribeChangeSetOutput> {
 
     const cf = getCfClient();
@@ -90,6 +91,7 @@ function printPlannedTable(stackName: string, desc: DescribeChangeSetOutput): vo
 
 }
 
+/** Fetch full change list after the SDK waiter finished building the change set (waiter polls status only). */
 async function runPreviewFromBuiltChangeSet(
     stackName: string,
     changeSetId: string,
@@ -134,7 +136,7 @@ export async function previewChangeSet<P extends TemplateParams>(
 
             await waitForChangeSetBuild(changeSetId);
 
-        } catch {
+        } catch (waitErr) {
 
             const descEarly = await describeChangeSetPaginated(changeSetId);
 
@@ -146,7 +148,16 @@ export async function previewChangeSet<P extends TemplateParams>(
 
             }
 
-            throw new Error(descEarly.StatusReason ?? 'Change set did not complete successfully');
+            const detail = descEarly.StatusReason ?? 'Change set did not complete successfully';
+
+            if (waitErr instanceof Error) {
+
+                waitErr.message = `${detail} — ${waitErr.message}`;
+                throw waitErr;
+
+            }
+
+            throw new Error(detail, {cause: waitErr});
 
         }
 

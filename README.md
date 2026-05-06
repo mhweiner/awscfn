@@ -149,6 +149,10 @@ awscfn preview-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
 
 Use this to review Add / Modify / Remove actions (and replacement hints) before running **`create-stack`** or **`update-stack`**.
 
+If the stack is **`ROLLBACK_COMPLETE`**, **`update-stack`** would delete and recreate it — **`preview-stack` cannot model that path** and exits with an error (delete the stack or run **`update-stack`** first).
+
+Non-resource change-set entries (for example hooks) are counted and noted when they are not shown as table rows.
+
 ### ♻️ redeploy-stack
 
 ```bash
@@ -354,7 +358,9 @@ await previewChangeSet('my-stack', {
 }, 'UPDATE');
 ```
 
-**CLI:** Prefer `awscfn preview-stack -n … -t … -p …`, which picks **CREATE** vs **UPDATE** from whether the stack exists (same idea as deploy).
+**CLI:** Prefer `awscfn preview-stack -n … -t … -p …`, which picks **CREATE** vs **UPDATE** from whether the stack exists (same idea as deploy). Refuses **`ROLLBACK_COMPLETE`** stacks (same recovery path as **`update-stack`**: delete + create).
+
+Table output lives in **`lib/formatChangeSet`** (shared formatting, not CLI-only).
 
 ## Contributing
 

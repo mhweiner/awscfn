@@ -1,7 +1,8 @@
+import {StackStatus} from '@aws-sdk/client-cloudformation';
 import * as cfn from './lib/cfn';
 import {loadTemplateAndParams} from './cli/loadTemplateAndParams';
 import {validateTemplateOrExit} from './cli/validateTemplate';
-import {cyan, info, symbols} from './lib/output';
+import {cyan, info, symbols, warn} from './lib/output';
 
 /**
  * CLI: preview stack changes without executing (build change set, print table, delete change set).
@@ -17,6 +18,19 @@ export async function previewStack(
 
     const {template, params} = await loadTemplateAndParams(templatePath, paramsPath);
     const existing = await cfn.getStackByName(stackName);
+
+    if (existing?.StackStatus === StackStatus.ROLLBACK_COMPLETE) {
+
+        warn(
+            `Stack ${stackName} is in ROLLBACK_COMPLETE; update-stack would delete and recreate it. `
+            + 'Preview cannot model that flow.',
+        );
+
+        throw new Error(
+            'cannot preview: stack is ROLLBACK_COMPLETE — delete the stack or run update-stack (delete + create) first.',
+        );
+
+    }
 
     console.log('validating template...');
     await validateTemplateOrExit(template);

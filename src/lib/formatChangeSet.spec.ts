@@ -47,3 +47,45 @@ test('formatChangeSetPreviewLines empty changes', (assert) => {
     assert.equal(lines[0].includes('no resource-level'), true);
 
 });
+
+test('formatChangeSetPreviewLines counts non-resource-only changes', (assert) => {
+
+    const changes: Change[] = [
+        {
+            Type: 'Resource',
+            HookInvocationCount: 1,
+        },
+    ];
+
+    const lines = formatChangeSetPreviewLines(changes, {color: false});
+
+    assert.equal(lines.length, 1);
+    assert.equal(lines[0].includes('other change'), true);
+
+});
+
+test('formatChangeSetPreviewLines footer when mixed resource and non-resource', (assert) => {
+
+    const changes: Change[] = [
+        {
+            Type: 'Resource',
+            ResourceChange: {
+                Action: 'Add',
+                LogicalResourceId: 'R',
+                ResourceType: 'AWS::SNS::Topic',
+                Replacement: 'False',
+            },
+        },
+        {
+            Type: 'Resource',
+            HookInvocationCount: 2,
+        },
+    ];
+
+    const lines = formatChangeSetPreviewLines(changes, {color: false});
+    const text = lines.join('\n');
+
+    assert.equal(text.includes('AWS::SNS::Topic'), true);
+    assert.equal(text.includes('non-resource'), true);
+
+});

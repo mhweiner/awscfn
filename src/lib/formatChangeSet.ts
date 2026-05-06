@@ -1,10 +1,9 @@
 import type {Change, ResourceChange} from '@aws-sdk/client-cloudformation';
-import {colorize, getOutputConfig, green, red, yellow, cyan} from '../lib/output';
+import {colorize, getOutputConfig, gray, green, red, yellow, cyan} from './output';
 
 const colors = {
     dim: '\x1b[2m',
     gray: '\x1b[90m',
-    reset: '\x1b[0m',
 };
 
 function pickActionStyle(action: string | undefined): (t: string) => string {
@@ -21,6 +20,13 @@ function pickActionStyle(action: string | undefined): (t: string) => string {
 function padRight(s: string, width: number): string {
 
     return s.length >= width ? s : s + ' '.repeat(width - s.length);
+
+}
+
+/** Entries such as hooks or future types that do not carry {@link ResourceChange}. */
+function countNonResourceEntries(changes: Change[]): number {
+
+    return changes.filter((c) => !c.ResourceChange).length;
 
 }
 
@@ -68,6 +74,7 @@ function sortedResourceChanges(changes: Change[]): ResourceChange[] {
 /**
  * Printable rows for a CloudFormation change set's {@link Change} list (resource-level rows).
  * Sorts by logical resource id for stable output.
+ * Non-resource entries (e.g. hooks) are counted but not tabulated.
  */
 export function formatChangeSetPreviewLines(
     changes: Change[],
@@ -76,8 +83,17 @@ export function formatChangeSetPreviewLines(
 
     const configColor = opts?.color ?? getOutputConfig().color;
     const resourceChanges = sortedResourceChanges(changes);
+    const nonResourceCount = countNonResourceEntries(changes);
 
     if (resourceChanges.length === 0) {
+
+        if (nonResourceCount > 0) {
+
+            const msg = `  (no resource-level rows — ${nonResourceCount} other change entr${nonResourceCount === 1 ? 'y' : 'ies'}, e.g. hooks)`;
+
+            return [configColor ? gray(msg) : msg];
+
+        }
 
         return ['  (no resource-level changes in this change set)'];
 
@@ -90,10 +106,20 @@ export function formatChangeSetPreviewLines(
 
     const divider = '-'.repeat(headerLine.length);
 
-    return [
+    const lines: string[] = [
         configColor ? colorize(headerLine, colors.dim) : headerLine,
         configColor ? colorize(divider, colors.gray) : divider,
         ...resourceRows(resourceChanges, maxLogical, maxType, configColor),
     ];
+
+    if (nonResourceCount > 0) {
+
+        const note = `  (${nonResourceCount} non-resource change${nonResourceCount === 1 ? '' : 's'} omitted from table — e.g. hooks)`;
+
+        lines.push(configColor ? gray(note) : note);
+
+    }
+
+    return lines;
 
 }
