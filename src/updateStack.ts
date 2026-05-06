@@ -10,6 +10,7 @@ export async function updateStack(
     stackName: string,
     templatePath: string,
     paramsPath?: string,
+    create: boolean = false,
 ): Promise<void> {
 
     cfn.initCloudFormationClient();
@@ -19,7 +20,19 @@ export async function updateStack(
 
     if (!existing) {
 
-        throw new Error('stack not found, try create command');
+        if (!create) {
+
+            throw new Error('stack not found, try create command');
+
+        }
+
+        console.log('validating template...');
+        await validateTemplateOrExit(template);
+
+        logStackAction(stackName, 'creating', params);
+        await cfn.createStack(stackName, {body: template, params});
+
+        return;
 
     }
 
