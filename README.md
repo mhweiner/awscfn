@@ -128,7 +128,7 @@ awscfn update-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
 | `--template`, `-t` | CloudFormation template file |
 | `--params`, `-p` | Parameters file (YAML) |
 | `--create` | If the stack doesn't exist, create it (instead of erroring) |
-| `--createIfMissing`, `-m` | Alias for `--create` |
+| `-m` | Shorthand for `--create` |
 
 If there are no changes to apply, the command succeeds gracefully:
 ```

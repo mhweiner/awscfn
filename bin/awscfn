@@ -95,15 +95,15 @@ const createIfMissingOpt = {
   // Preferred flag name.
   create: {
     type: 'boolean',
+    alias: 'm',
     describe: 'Create the stack if it does not exist (update-stack only)',
     demandOption: false,
     default: false,
   },
-  // Backwards-compatible alias.
+  // Backwards-compatible alias. Hidden so help output doesn't teach the old name.
   createIfMissing: {
     type: 'boolean',
-    alias: 'm',
-    describe: 'Alias for --create (create the stack if it does not exist)',
+    hidden: true,
     demandOption: false,
     default: false,
   },
