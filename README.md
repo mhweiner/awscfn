@@ -176,6 +176,10 @@ If the names don't match, the deletion will be aborted.
 
 > ⚠️ Requires AWS credentials to be configured in your shell or environment. [Start here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) if you haven't already.
 
+### Nested stacks and IAM
+
+Change sets request **`CAPABILITY_NAMED_IAM`** and **`CAPABILITY_AUTO_EXPAND`**, so stacks that define named IAM resources or **nested stacks** (including templates from [`aws cloudformation package`](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/package.html)) work with **`create-stack`** / **`update-stack`** and the SDK `createStack` / `updateStack` helpers.
+
 ### 📋 `listStacks(): Promise<StackSummary[]>`
 
 Returns all CloudFormation stacks in the current region (paginated). Excludes deleted stacks (`DELETE_COMPLETE`, `DELETE_IN_PROGRESS`) via `StackStatusFilter`. Each item is an AWS SDK `StackSummary` (e.g. `StackName`, `StackStatus`, `CreationTime`).
