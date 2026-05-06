@@ -46,11 +46,7 @@ async function createChangeSet<P extends TemplateParams>(
         ChangeSetName: changeSetName,
         ChangeSetType: operation,
         Parameters: parameters,
-        Capabilities: [
-            'CAPABILITY_IAM',
-            'CAPABILITY_NAMED_IAM',
-            'CAPABILITY_AUTO_EXPAND',
-        ],
+        Capabilities: ['CAPABILITY_NAMED_IAM', 'CAPABILITY_AUTO_EXPAND'],
     }));
 
     const cfg = getOutputConfig();

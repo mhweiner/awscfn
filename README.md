@@ -178,7 +178,7 @@ If the names don't match, the deletion will be aborted.
 
 ### Nested stacks and IAM
 
-Change sets request **`CAPABILITY_IAM`**, **`CAPABILITY_NAMED_IAM`**, and **`CAPABILITY_AUTO_EXPAND`**, so stacks with unnamed or named IAM resources and **nested stacks** (including templates from [`aws cloudformation package`](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/package.html)) work with **`create-stack`** / **`update-stack`** and the SDK `createStack` / `updateStack` helpers.
+Change sets request **`CAPABILITY_NAMED_IAM`** and **`CAPABILITY_AUTO_EXPAND`**, so stacks that define named IAM resources or **nested stacks** (including templates from [`aws cloudformation package`](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/package.html)) work with **`create-stack`** / **`update-stack`** and the SDK `createStack` / `updateStack` helpers.
 
 ### 📋 `listStacks(): Promise<StackSummary[]>`
 
