@@ -94,6 +94,7 @@ const paramsOpt = {
 const setOpt = {
   set: {
     type: 'string',
+    alias: 's',
     array: true,
     describe: 'Override one or more parameters (repeatable). Format: Key=Value',
     demandOption: false,
