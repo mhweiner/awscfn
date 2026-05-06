@@ -115,6 +115,7 @@ awscfn create-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
 | `--name`, `-n` | Stack name |
 | `--template`, `-t` | CloudFormation template file |
 | `--params`, `-p` | Parameters file (YAML) |
+| `--set` | Override one or more parameters (repeatable `Key=Value`) |
 
 ### ⬆️ update-stack
 
@@ -127,6 +128,7 @@ awscfn update-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
 | `--name`, `-n` | Stack name |
 | `--template`, `-t` | CloudFormation template file |
 | `--params`, `-p` | Parameters file (YAML) |
+| `--set` | Override one or more parameters (repeatable `Key=Value`). You can omit `--params` to override only specific values on an existing stack. |
 | `--create` | If the stack doesn't exist, create it (instead of erroring) |
 | `-m` | Shorthand for `--create` |
 
@@ -148,6 +150,7 @@ awscfn preview-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
 | `--name`, `-n` | Stack name |
 | `--template`, `-t` | CloudFormation template file |
 | `--params`, `-p` | Parameters file (YAML) |
+| `--set` | Override one or more parameters (repeatable `Key=Value`) |
 
 Use this to review Add / Modify / Remove actions (and replacement hints) before running **`create-stack`** or **`update-stack`**.
 

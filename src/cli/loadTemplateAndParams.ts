@@ -14,12 +14,18 @@ export interface TemplateAndParams {
 export async function loadTemplateAndParams(
     templatePath: string,
     paramsPath: string | undefined,
+    overrides?: Record<string, string>,
 ): Promise<TemplateAndParams> {
 
     const template = readFileSync(templatePath, 'utf-8');
-    const params = (paramsPath && templateHasParameters(template))
+    const fileParams = (paramsPath && templateHasParameters(template))
         ? ((await getParamsFromFile(paramsPath)) as Record<string, unknown>)
         : {};
+
+    const params = {
+        ...fileParams,
+        ...(overrides ?? {}),
+    };
 
     return {template, params};
 

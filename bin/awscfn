@@ -91,6 +91,15 @@ const templateOpt = {
 const paramsOpt = {
   params: { type: 'string', alias: 'p', describe: 'Parameters file (YAML). Optional; omit to use template defaults.', demandOption: false },
 };
+const setOpt = {
+  set: {
+    type: 'string',
+    array: true,
+    describe: 'Override one or more parameters (repeatable). Format: Key=Value',
+    demandOption: false,
+    default: [],
+  },
+};
 const createIfMissingOpt = {
   create: {
     type: 'boolean',
@@ -141,9 +150,9 @@ yargs
   .command(
     'create-stack',
     'Create a CloudFormation stack',
-    (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt }),
-    ({ name, template, params }) => {
-      runCommand(() => createStack(name, template, params));
+    (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt, ...setOpt }),
+    ({ name, template, params, set }) => {
+      runCommand(() => createStack(name, template, params, require('../dist/cli/parseParamOverrides').parseParamOverrides(set).overrides));
     }
   )
   .command(
@@ -165,17 +174,17 @@ yargs
   .command(
     'update-stack',
     'Update a CloudFormation stack',
-    (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt, ...createIfMissingOpt }),
-    ({ name, template, params, create }) => {
-      runCommand(() => updateStack(name, template, params, Boolean(create)));
+    (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt, ...createIfMissingOpt, ...setOpt }),
+    ({ name, template, params, create, set }) => {
+      runCommand(() => updateStack(name, template, params, Boolean(create), require('../dist/cli/parseParamOverrides').parseParamOverrides(set).overrides));
     }
   )
   .command(
     'preview-stack',
     'Preview changes without deploying (change set only)',
-    (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt }),
-    ({ name, template, params }) => {
-      runCommand(() => previewStack(name, template, params));
+    (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt, ...setOpt }),
+    ({ name, template, params, set }) => {
+      runCommand(() => previewStack(name, template, params, require('../dist/cli/parseParamOverrides').parseParamOverrides(set).overrides));
     }
   )
   .completion(
