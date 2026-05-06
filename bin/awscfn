@@ -92,18 +92,10 @@ const paramsOpt = {
   params: { type: 'string', alias: 'p', describe: 'Parameters file (YAML). Optional; omit to use template defaults.', demandOption: false },
 };
 const createIfMissingOpt = {
-  // Preferred flag name.
   create: {
     type: 'boolean',
     alias: 'm',
     describe: 'Create the stack if it does not exist (update-stack only)',
-    demandOption: false,
-    default: false,
-  },
-  // Backwards-compatible alias. Hidden so help output doesn't teach the old name.
-  createIfMissing: {
-    type: 'boolean',
-    hidden: true,
     demandOption: false,
     default: false,
   },
@@ -174,8 +166,8 @@ yargs
     'update-stack',
     'Update a CloudFormation stack',
     (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt, ...createIfMissingOpt }),
-    ({ name, template, params, create, createIfMissing }) => {
-      runCommand(() => updateStack(name, template, params, Boolean(create || createIfMissing)));
+    ({ name, template, params, create }) => {
+      runCommand(() => updateStack(name, template, params, Boolean(create)));
     }
   )
   .command(
