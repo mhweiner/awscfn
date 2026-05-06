@@ -133,6 +133,26 @@ If there are no changes to apply, the command succeeds gracefully:
 ✓ Stack my-stack is up to date (no changes)
 ```
 
+### 👁️ preview-stack
+
+Builds a change set (same capabilities as deploy), prints a **table of planned resource-level changes**, then **deletes** the change set without executing it. If the stack exists, uses an **UPDATE** change set; otherwise **CREATE**.
+
+```bash
+awscfn preview-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
+```
+
+| Flag | Description |
+|------|-------------|
+| `--name`, `-n` | Stack name |
+| `--template`, `-t` | CloudFormation template file |
+| `--params`, `-p` | Parameters file (YAML) |
+
+Use this to review Add / Modify / Remove actions (and replacement hints) before running **`create-stack`** or **`update-stack`**.
+
+If the stack is **`ROLLBACK_COMPLETE`**, **`update-stack`** would delete and recreate it — **`preview-stack` cannot model that path** and exits with an error (delete the stack or run **`update-stack`** first).
+
+Non-resource change-set entries (for example hooks) are counted and noted when they are not shown as table rows.
+
 ### ♻️ redeploy-stack
 
 ```bash
@@ -178,7 +198,7 @@ If the names don't match, the deletion will be aborted.
 
 ### Nested stacks and IAM
 
-Change sets request **`CAPABILITY_NAMED_IAM`** and **`CAPABILITY_AUTO_EXPAND`**, so stacks that define named IAM resources or **nested stacks** (including templates from [`aws cloudformation package`](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/package.html)) work with **`create-stack`** / **`update-stack`** and the SDK `createStack` / `updateStack` helpers.
+Change sets request **`CAPABILITY_NAMED_IAM`** and **`CAPABILITY_AUTO_EXPAND`**, so stacks that define named IAM resources or **nested stacks** (including templates from [`aws cloudformation package`](https://docs.aws.amazon.com/cli/latest/reference/cloudformation/package.html)) work with **`create-stack`** / **`update-stack`** / **`preview-stack`** and the SDK `createStack` / `updateStack` / `previewChangeSet` helpers.
 
 ### 📋 `listStacks(): Promise<StackSummary[]>`
 
@@ -322,6 +342,25 @@ Reason: Resource handler returned message: "CannotPullContainerError: image not 
 > ℹ️ Requires AWS credentials in your environment (`AWS_PROFILE`, `AWS_ACCESS_KEY_ID`, etc.).
 
 > ✅ This function ensures safety by skipping updates for in-progress stacks and gracefully recovering from `ROLLBACK_COMPLETE` states.
+
+### 👁️ `previewChangeSet(stackName, template, operation)` / `previewStack(...)`
+
+**SDK:** Build a change set, print a colored table of planned resource changes (Add / Modify / Remove, replacement hints), then delete the change set — **without** executing it. Same capabilities as deploy (`CAPABILITY_NAMED_IAM`, `CAPABILITY_AUTO_EXPAND`).
+
+```ts
+import { initCloudFormationClient, previewChangeSet } from 'awscfn';
+
+initCloudFormationClient();
+
+await previewChangeSet('my-stack', {
+  body: templateString,
+  params: { Env: 'prod' },
+}, 'UPDATE');
+```
+
+**CLI:** Prefer `awscfn preview-stack -n … -t … -p …`, which picks **CREATE** vs **UPDATE** from whether the stack exists (same idea as deploy). Refuses **`ROLLBACK_COMPLETE`** stacks (same recovery path as **`update-stack`**: delete + create).
+
+Table output lives in **`lib/formatChangeSet`** (shared formatting, not CLI-only).
 
 ## Contributing
 
