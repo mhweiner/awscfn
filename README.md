@@ -152,7 +152,7 @@ awscfn update-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
 | `--params`, `-p` | Parameters file (YAML) |
 | `--set`, `-s` | Override one or more parameters (repeatable `Key=Value`). You can omit `--params` to override only specific values on an existing stack. |
 | `--create` | If the stack doesn't exist, create it (instead of erroring) |
-| `-m` | Shorthand for `--create` |
+| `-c` | Shorthand for `--create` |
 
 If there are no changes to apply, the command succeeds gracefully:
 ```
