@@ -427,7 +427,7 @@ const cli = yargs
   )
   .command(
     'preview-stack',
-    'Preview changes without deploying (change set only)',
+    'Preview changes (interactive deploy prompt in TTY)',
     (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt, ...setOpt }),
     ({ name, template, params, set }) => {
       runCommand(() => previewStack(name, template, params, require('../dist/cli/parseParamOverrides').parseParamOverrides(set).overrides));

@@ -176,6 +176,8 @@ awscfn preview-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
 
 Use this to review Add / Modify / Remove actions (and replacement hints) before running **`create-stack`** or **`update-stack`**.
 
+In interactive terminals, `preview-stack` will prompt to deploy immediately after the preview. In CI/non-interactive mode, no prompt is shown.
+
 If the stack is **`ROLLBACK_COMPLETE`**, **`update-stack`** would delete and recreate it — **`preview-stack` cannot model that path** and exits with an error (delete the stack or run **`update-stack`** first).
 
 Non-resource change-set entries (for example hooks) are counted and noted when they are not shown as table rows.
