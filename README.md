@@ -9,7 +9,7 @@
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 [![AutoRel](https://img.shields.io/badge/%F0%9F%9A%80%20AutoRel-2D4DDE)](https://github.com/mhweiner/autorel)
 
-Deploy CloudFormation stacks without the usual suffering.
+Deploy CloudFormation stacks with confidence.
 
 ## Why awscfn?
 
@@ -103,6 +103,28 @@ List all CloudFormation stacks in the current region (name, status, creation dat
 ```bash
 awscfn list-stacks
 ```
+
+### 🔎 inspect-stack
+
+Inspect a **deployed** stack in a **read-only pager view** (TUI-like), including:
+
+- full deployed template body
+- current parameters and outputs
+- stack metadata (raw JSON details)
+- event timeline (chronological)
+- failure events and likely root-cause errors
+
+```bash
+awscfn inspect-stack -n <STACK_NAME>
+```
+
+| Flag | Description |
+|------|-------------|
+| `--name`, `-n` | Stack name |
+| `--events`, `-e` | Max stack events to fetch (`0` = all available events). Default `500` |
+| `--pager` / `--no-pager` | Use a view-only pager (default true). Disable to print directly |
+
+This command performs read-only CloudFormation API calls (`DescribeStacks`, `GetTemplate`, `DescribeStackEvents`) and makes no stack changes.
 
 ### 🚀 create-stack
 
