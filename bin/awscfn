@@ -7,6 +7,7 @@ const yargs = require('yargs');
 const { createStack } = require('../dist/createStack');
 const { deleteStack } = require('../dist/deleteStack');
 const { listStacks } = require('../dist/listStacks');
+const { inspectStack } = require('../dist/inspectStack');
 const { previewStack } = require('../dist/previewStack');
 const { redeployStack } = require('../dist/redeployStack');
 const { updateStack } = require('../dist/updateStack');
@@ -113,6 +114,23 @@ const createIfMissingOpt = {
 const confirmOpt = {
   confirm: { type: 'string', alias: 'c', describe: 'Repeat stack name to confirm deletion', demandOption: true },
 };
+const eventsLimitOpt = {
+  events: {
+    type: 'number',
+    alias: 'e',
+    describe: 'Max stack events to fetch (0 means all available events)',
+    demandOption: false,
+    default: 500,
+  },
+};
+const pagerOpt = {
+  pager: {
+    type: 'boolean',
+    describe: 'Open output in a view-only pager (use --no-pager to print directly)',
+    demandOption: false,
+    default: true,
+  },
+};
 
 yargs
   .option('ci', {
@@ -186,6 +204,14 @@ yargs
     (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt, ...setOpt }),
     ({ name, template, params, set }) => {
       runCommand(() => previewStack(name, template, params, require('../dist/cli/parseParamOverrides').parseParamOverrides(set).overrides));
+    }
+  )
+  .command(
+    'inspect-stack',
+    'Inspect a deployed stack in a read-only pager view',
+    (cmd) => cmd.options({ ...nameOpt, ...eventsLimitOpt, ...pagerOpt }),
+    ({ name, events, pager }) => {
+      runCommand(() => inspectStack(name, { eventsLimit: Number(events), usePager: Boolean(pager) }));
     }
   )
   .completion(
