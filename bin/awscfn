@@ -345,7 +345,7 @@ const eventsLimitOpt = {
 const pagerOpt = {
   pager: {
     type: 'boolean',
-    describe: 'Open output in a view-only pager (use --no-pager to print directly)',
+    describe: 'Use interactive TUI/pager output (use --no-pager to print directly)',
     demandOption: false,
     default: true,
   },
@@ -355,7 +355,7 @@ const cli = yargs
   .scriptName('awscfn')
   .usage('Usage:\n  $0 <command> [options]')
   .example('$0 list-stacks', 'List active stacks in the current AWS region')
-  .example('$0 inspect-stack -n my-stack', 'Open a read-only stack inspection view')
+  .example('$0 inspect-stack -n my-stack', 'Open interactive stack inspection panes')
   .example('$0 update-stack -n my-stack -t ./template.yaml -p ./params.yaml', 'Update an existing stack')
   .epilog('Tip: run `awscfn <command> --help` for command-specific help.')
   .option('ci', {
@@ -433,7 +433,7 @@ const cli = yargs
   )
   .command(
     'inspect-stack',
-    'Inspect a deployed stack in a read-only pager view',
+    'Inspect a deployed stack in interactive panes (with fallback)',
     (cmd) => cmd.options({ ...nameOpt, ...eventsLimitOpt, ...pagerOpt }),
     ({ name, events, pager }) => {
       runCommand(() => inspectStack(name, { eventsLimit: Number(events), usePager: Boolean(pager) }));
