@@ -36,3 +36,4 @@ export * from './getParamFromStack';
 export * from './streamStackEvents';
 export * from './getStackTemplate';
 export * from './listStackEvents';
+export * from './executeChangeSet';

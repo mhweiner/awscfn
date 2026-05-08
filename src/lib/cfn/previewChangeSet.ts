@@ -16,9 +16,11 @@ import {cyan, dim, gray, info, success, symbols} from '../output';
 
 export interface PreviewChangeSetOptions extends SubmitChangeSetOptions {}
 export interface PreviewChangeSetResult {
+    changeSetId: string
     previewStackId?: string
 }
 type PreviewError = Error & { previewStackId?: string };
+type PreviewErrorWithChangeSet = PreviewError & { changeSetId?: string };
 
 function isNoChangesOutcome(desc: DescribeChangeSetOutput): boolean {
 
@@ -60,7 +62,7 @@ async function describeChangeSetPaginated(changeSetId: string): Promise<Describe
 
 }
 
-async function deleteChangeSetQuiet(changeSetId: string): Promise<void> {
+export async function deletePreviewChangeSet(changeSetId: string): Promise<void> {
 
     const cf = getCfClient();
 
@@ -75,6 +77,12 @@ async function deleteChangeSetQuiet(changeSetId: string): Promise<void> {
         // Best-effort cleanup after preview
 
     }
+
+}
+
+export async function describePreviewChangeSet(changeSetId: string): Promise<DescribeChangeSetOutput> {
+
+    return describeChangeSetPaginated(changeSetId);
 
 }
 
@@ -116,6 +124,18 @@ function toPreviewError(
 
 }
 
+function withChangeSetId(error: unknown, changeSetId: string): PreviewErrorWithChangeSet {
+
+    const normalized = error instanceof Error
+        ? error as PreviewErrorWithChangeSet
+        : new Error(String(error)) as PreviewErrorWithChangeSet;
+
+    normalized.changeSetId = changeSetId;
+
+    return normalized;
+
+}
+
 async function waitForPreviewDescription(
     changeSetId: string,
 ): Promise<DescribeChangeSetOutput> {
@@ -143,12 +163,13 @@ async function waitForPreviewDescription(
 function finalizePreviewResult(
     stackName: string,
     desc: DescribeChangeSetOutput,
+    changeSetId: string,
 ): PreviewChangeSetResult {
 
     if (isNoChangesOutcome(desc)) {
 
         success(`${symbols.check} Stack ${cyan(stackName)} — no changes to apply`);
-        return {previewStackId: desc.StackId};
+        return {changeSetId, previewStackId: desc.StackId};
 
     }
 
@@ -162,33 +183,47 @@ function finalizePreviewResult(
 
     printPlannedTable(stackName, desc);
 
-    return {previewStackId: desc.StackId};
+    return {changeSetId, previewStackId: desc.StackId};
 
 }
 
 /**
- * Build a change set, print planned resource changes (without executing), then delete the change set.
+ * Build a change set and print planned resource changes without executing.
+ * The change set is deleted only when deleteAfterPreview is true (default).
  */
 export async function previewChangeSet<P extends TemplateParams>(
     stackName: string,
     template: Template<P>,
     operation: ChangeSetOperation,
-    options: PreviewChangeSetOptions = {},
+    options: PreviewChangeSetOptions & { deleteAfterPreview?: boolean } = {},
 ): Promise<PreviewChangeSetResult> {
 
     dim(`  ${symbols.bullet} Building change set ${gray(`(${operation.toLowerCase()} preview)`)}`);
 
+    const {deleteAfterPreview = true} = options;
     const changeSetId = await submitChangeSetRequest(stackName, template, operation, options);
 
     try {
 
-        const desc = await waitForPreviewDescription(changeSetId);
+        try {
 
-        return finalizePreviewResult(stackName, desc);
+            const desc = await waitForPreviewDescription(changeSetId);
+
+            return finalizePreviewResult(stackName, desc, changeSetId);
+
+        } catch (error) {
+
+            throw withChangeSetId(error, changeSetId);
+
+        }
 
     } finally {
 
-        await deleteChangeSetQuiet(changeSetId);
+        if (deleteAfterPreview) {
+
+            await deletePreviewChangeSet(changeSetId);
+
+        }
 
     }
 

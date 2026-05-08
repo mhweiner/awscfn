@@ -108,15 +108,22 @@ export async function createAndExecChangeSet<P extends TemplateParams>(
 
     dim(`  ${symbols.bullet} Creating changeset ${gray(`(${operation.toLowerCase()})`)}`);
 
-    const cf = getCfClient();
     const changeSetId = await createChangeSetAndWait(stackName, template, operation);
 
     dim(`  ${symbols.bullet} Executing changeset...`);
 
+    await executeExistingChangeSet(changeSetId);
+
+    return changeSetId;
+
+}
+
+export async function executeExistingChangeSet(changeSetId: string): Promise<void> {
+
+    const cf = getCfClient();
+
     await cf.send(new ExecuteChangeSetCommand({
         ChangeSetName: changeSetId,
     }));
-
-    return changeSetId;
 
 }
