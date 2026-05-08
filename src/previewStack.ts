@@ -1,18 +1,33 @@
 import {randomUUID} from 'node:crypto';
 import {stdin, stdout} from 'node:process';
 import {createInterface} from 'node:readline/promises';
-import {StackStatus} from '@aws-sdk/client-cloudformation';
+import {DescribeChangeSetOutput, StackStatus} from '@aws-sdk/client-cloudformation';
 import * as cfn from './lib/cfn';
 import {logStackAction} from './cli/log';
 import {loadTemplateAndParams} from './cli/loadTemplateAndParams';
 import {validateTemplateOrExit} from './cli/validateTemplate';
-import {cyan, info, symbols, warn} from './lib/output';
+import {cyan, info, success, symbols, warn} from './lib/output';
 
 const PREVIEW_DELETE_WAIT_TIMEOUT_MS = 2 * 60 * 1000;
 const PREVIEW_DELETE_POLL_MS = 3000;
 
 type ExistingStack = Awaited<ReturnType<typeof cfn.getStackByName>>;
-type PreviewChangeSetError = Error & { previewStackId?: string };
+type PreviewChangeSetError = Error & { previewStackId?: string; changeSetId?: string };
+type PreviewOperation = 'CREATE' | 'UPDATE';
+interface PreviewSession {
+    operation: PreviewOperation
+    keepChangeSet: boolean
+    changeSetId?: string
+    previewStackId?: string
+}
+interface RunPreviewInput {
+    stackName: string
+    template: string
+    params: Record<string, unknown>
+    existing: ExistingStack
+    previewRunId: string
+    keepChangeSet: boolean
+}
 
 /**
  * CLI: preview stack changes without executing (build change set, print table, delete change set).
@@ -44,40 +59,41 @@ async function previewThenMaybeDeploy(
     previewRunId: string,
 ): Promise<void> {
 
-    const previewStackId = await runPreviewChangeSet(
+    const keepChangeSet = canPromptInteractively();
+    const previewSession = await runPreviewChangeSet({
         stackName,
         template,
         params,
         existing,
         previewRunId,
-    );
+        keepChangeSet,
+    });
 
     const shouldDeploy = await promptDeployAfterPreview(stackName);
 
-    await cleanupCreatePreviewStackBestEffort(
-        existing,
-        stackName,
-        shouldDeploy,
-        previewStackId,
-        previewRunId,
-    );
+    if (!shouldDeploy) {
 
-    if (!shouldDeploy) return;
+        await cleanupPreviewArtifacts(existing, stackName, previewSession, previewRunId, shouldDeploy);
+        return;
 
-    info(`${symbols.arrow} Deploying stack ${cyan(stackName)} from preview...`);
-    await deployPreview(stackName, template, params);
+    }
+
+    await deployFromPreview(stackName, template, params, previewSession);
 
 }
 
-async function runPreviewChangeSet(
-    stackName: string,
-    template: string,
-    params: Record<string, unknown>,
-    existing: ExistingStack,
-    previewRunId: string,
-): Promise<string|undefined> {
+async function runPreviewChangeSet(input: RunPreviewInput): Promise<PreviewSession> {
 
-    const operation = existing ? 'UPDATE' : 'CREATE';
+    const {
+        stackName,
+        template,
+        params,
+        existing,
+        previewRunId,
+        keepChangeSet,
+    } = input;
+
+    const operation: PreviewOperation = existing ? 'UPDATE' : 'CREATE';
 
     info(`${symbols.arrow} Preview ${cyan(operation)} for stack ${cyan(stackName)}`);
 
@@ -87,26 +103,207 @@ async function runPreviewChangeSet(
             stackName,
             {body: template, params},
             operation,
-            {clientToken: previewRunId},
+            {clientToken: previewRunId, deleteAfterPreview: !keepChangeSet},
         );
 
-        return previewResult.previewStackId;
+        return {
+            operation,
+            keepChangeSet,
+            changeSetId: previewResult.changeSetId,
+            previewStackId: previewResult.previewStackId,
+        };
 
     } catch (error) {
 
-        const previewStackId = getPreviewStackIdFromError(error)
-            ?? await resolvePreviewStackId(existing, stackName);
-
-        await cleanupCreatePreviewStackBestEffort(
-            existing,
-            stackName,
-            false,
-            previewStackId,
-            previewRunId,
-        );
+        await handlePreviewChangeSetError(error, existing, stackName, previewRunId, keepChangeSet);
         throw error;
 
     }
+
+}
+
+async function handlePreviewChangeSetError(
+    error: unknown,
+    existing: ExistingStack,
+    stackName: string,
+    previewRunId: string,
+    keepChangeSet: boolean,
+): Promise<void> {
+
+    const previewStackId = getPreviewStackIdFromError(error)
+        ?? await resolvePreviewStackId(existing, stackName);
+    const changeSetId = getChangeSetIdFromError(error);
+
+    if (keepChangeSet && changeSetId) await cleanupChangeSetBestEffort(changeSetId);
+
+    await cleanupCreatePreviewStackBestEffort(
+        existing,
+        stackName,
+        false,
+        previewStackId,
+        previewRunId,
+    );
+
+}
+
+async function deployFromPreview(
+    stackName: string,
+    template: string,
+    params: Record<string, unknown>,
+    previewSession: PreviewSession,
+): Promise<void> {
+
+    info(`${symbols.arrow} Deploying stack ${cyan(stackName)} from preview...`);
+
+    if (!previewSession.changeSetId) {
+
+        await deployPreview(stackName, template, params);
+        return;
+
+    }
+
+    await executeReviewedPreviewChangeSet(stackName, previewSession);
+
+}
+
+async function cleanupPreviewArtifacts(
+    existing: ExistingStack,
+    stackName: string,
+    previewSession: PreviewSession,
+    previewRunId: string,
+    waitForCompletion: boolean,
+): Promise<void> {
+
+    if (previewSession.keepChangeSet && previewSession.changeSetId) {
+
+        await cleanupChangeSetBestEffort(previewSession.changeSetId);
+
+    }
+
+    await cleanupCreatePreviewStackBestEffort(
+        existing,
+        stackName,
+        waitForCompletion,
+        previewSession.previewStackId,
+        previewRunId,
+    );
+
+}
+
+async function cleanupChangeSetBestEffort(changeSetId: string): Promise<void> {
+
+    try {
+
+        await cfn.deletePreviewChangeSet(changeSetId);
+
+    } catch {
+
+        // best effort cleanup when user declines deploy
+
+    }
+
+}
+
+async function executeReviewedPreviewChangeSet(
+    stackName: string,
+    previewSession: PreviewSession,
+): Promise<void> {
+
+    const desc = await cfn.describePreviewChangeSet(previewSession.changeSetId as string);
+
+    if (isNoChangesChangeSet(desc)) {
+
+        await handleNoChangesPreviewExecution(stackName, previewSession);
+        return;
+
+    }
+
+    ensurePreviewChangeSetIsExecutable(stackName, previewSession, desc);
+
+    await cfn.executeExistingChangeSet(previewSession.changeSetId as string);
+
+    const terminal = await cfn.waitUntilStackTerminalWithEvents(stackName);
+
+    if (!isExpectedDeployTerminalStatus(previewSession.operation, terminal.stack.StackStatus as StackStatus)) {
+
+        const reason = terminal.failureReason ? ` Reason: ${terminal.failureReason}` : '';
+
+        throw new Error(
+            `Preview deploy did not complete successfully for stack "${stackName}". `
+            + `Final status: ${terminal.stack.StackStatus}.${reason}`,
+        );
+
+    }
+
+    const verb = previewSession.operation === 'CREATE' ? 'created' : 'updated';
+
+    success(`${symbols.check} Stack ${cyan(stackName)} ${verb} successfully from reviewed preview`);
+
+}
+
+async function handleNoChangesPreviewExecution(
+    stackName: string,
+    previewSession: PreviewSession,
+): Promise<void> {
+
+    success(`${symbols.check} Stack ${cyan(stackName)} is up to date (no changes)`);
+    await cleanupChangeSetBestEffort(previewSession.changeSetId as string);
+
+    if (previewSession.operation !== 'CREATE') return;
+
+    await cleanupCreatePreviewStackBestEffort(
+        undefined,
+        stackName,
+        false,
+        previewSession.previewStackId,
+    );
+
+}
+
+function ensurePreviewChangeSetIsExecutable(
+    stackName: string,
+    previewSession: PreviewSession,
+    desc: DescribeChangeSetOutput,
+): void {
+
+    if (previewSession.previewStackId && desc.StackId !== previewSession.previewStackId) {
+
+        throw new Error(
+            `Preview change set ownership mismatch for stack "${stackName}". `
+            + 'Refusing to execute a different stack identity.',
+        );
+
+    }
+
+    if (desc.Status !== 'CREATE_COMPLETE' || desc.ExecutionStatus !== 'AVAILABLE') {
+
+        throw new Error(
+            `Preview change set is not executable for stack "${stackName}". `
+            + `Status: ${desc.Status ?? 'unknown'}, execution: ${desc.ExecutionStatus ?? 'unknown'}.`,
+        );
+
+    }
+
+}
+
+function isNoChangesChangeSet(desc: DescribeChangeSetOutput): boolean {
+
+    const reason = desc.StatusReason ?? '';
+
+    return Boolean(desc.Status === 'FAILED'
+        && (reason.includes('didn\'t contain changes')
+            || reason.includes('No updates are to be performed')));
+
+}
+
+function isExpectedDeployTerminalStatus(
+    operation: PreviewOperation,
+    status: StackStatus,
+): boolean {
+
+    if (operation === 'CREATE') return status === StackStatus.CREATE_COMPLETE;
+
+    return status === StackStatus.UPDATE_COMPLETE;
 
 }
 
@@ -289,6 +486,12 @@ function createPreviewRunId(): string {
 function getPreviewStackIdFromError(error: unknown): string|undefined {
 
     return (error as PreviewChangeSetError)?.previewStackId;
+
+}
+
+function getChangeSetIdFromError(error: unknown): string|undefined {
+
+    return (error as PreviewChangeSetError)?.changeSetId;
 
 }
 

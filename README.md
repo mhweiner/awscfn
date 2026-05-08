@@ -161,7 +161,7 @@ If there are no changes to apply, the command succeeds gracefully:
 
 ### 👁️ preview-stack
 
-Builds a change set (same capabilities as deploy), prints a **table of planned resource-level changes**, then **deletes** the change set without executing it. If the stack exists, uses an **UPDATE** change set; otherwise **CREATE**.
+Builds a change set (same capabilities as deploy), prints a **table of planned resource-level changes**, then leaves it unexecuted by default. If the stack exists, uses an **UPDATE** change set; otherwise **CREATE**.
 
 ```bash
 awscfn preview-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
@@ -176,7 +176,7 @@ awscfn preview-stack -n <STACK_NAME> -t <TEMPLATE_FILE> -p <PARAMS_FILE>
 
 Use this to review Add / Modify / Remove actions (and replacement hints) before running **`create-stack`** or **`update-stack`**.
 
-In interactive terminals, `preview-stack` will prompt to deploy immediately after the preview. In CI/non-interactive mode, no prompt is shown.
+In interactive terminals, `preview-stack` will prompt to deploy immediately after the preview. If you answer `yes`, it executes the **same reviewed change set** (with ownership/status checks) instead of rebuilding a new one. In CI/non-interactive mode, no prompt is shown.
 
 If the stack is **`ROLLBACK_COMPLETE`**, **`update-stack`** would delete and recreate it — **`preview-stack` cannot model that path** and exits with an error (delete the stack or run **`update-stack`** first).
 
