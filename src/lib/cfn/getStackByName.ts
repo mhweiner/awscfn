@@ -4,7 +4,7 @@ import {getCfClient} from '.';
 
 export async function getStackByName(name: string, suppressLog: boolean = false): Promise<Stack|undefined> {
 
-    !suppressLog && console.log(`looking up stack ${name}`);
+    !suppressLog && console.log(`looking up stack "${name}"`);
 
     const cf = getCfClient();
     const [error, result] = await toResultAsync(cf.send(new DescribeStacksCommand({StackName: name})));
@@ -25,7 +25,7 @@ export async function getStackByName(name: string, suppressLog: boolean = false)
 
     if (stack) {
 
-        !suppressLog && console.log(`found stack ${name} as ${stack.StackId}`);
+        !suppressLog && console.log(`found stack "${name}" as ${stack.StackId}`);
         return stack;
 
     }

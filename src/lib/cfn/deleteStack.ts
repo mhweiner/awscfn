@@ -1,9 +1,19 @@
 import {DeleteStackCommand, Stack} from '@aws-sdk/client-cloudformation';
-import {waitUntilStackTerminal} from './waitUntilStackTerminal';
+import {waitUntilStackTerminalWithEvents} from './waitUntilStackTerminal';
 import {toResultAsync} from '../toResult';
 import {getCfClient} from '.';
 
-export async function deleteStack(stack: Stack): Promise<void> {
+export interface DeleteStackOptions {
+    waitForCompletion?: boolean
+    timeoutMs?: number
+}
+
+export async function deleteStack(
+    stack: Stack,
+    options: DeleteStackOptions = {},
+): Promise<void> {
+
+    const {waitForCompletion = true, timeoutMs} = options;
 
     console.log(`deleting stack ${stack.StackName}...`);
 
@@ -12,7 +22,17 @@ export async function deleteStack(stack: Stack): Promise<void> {
 
     await cf.send(deleteStackCommand);
 
-    const [err] = await toResultAsync(waitUntilStackTerminal(stack.StackName as string));
+    if (!waitForCompletion) {
+
+        console.log(`🗑 delete requested for stack ${stack.StackName} (${stack.StackId})`);
+        return;
+
+    }
+
+    const [err] = await toResultAsync(waitUntilStackTerminalWithEvents(
+        stack.StackName as string,
+        timeoutMs ? {timeoutMs} : {},
+    ));
 
     if (err && err.message !== 'stack not found') throw err;
 
