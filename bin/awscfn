@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
+const { spawnSync } = require('node:child_process');
 const yargs = require('yargs');
 
 const { createStack } = require('../dist/createStack');
@@ -17,6 +19,9 @@ const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'
 const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
 
 const FILE_FLAGS = ['--template', '--params', '-t', '-p'];
+const ASCII_LOGO = [
+  'awscfn',
+];
 
 function completeFile(current) {
   const dir = path.dirname(current) || '.';
@@ -50,6 +55,65 @@ function logError(msg) {
   console.log(`\x1b[31mError: ${msg}\x1b[0m`);
 }
 
+function maybeColorize(text, colorCode) {
+  if (!process.stdout.isTTY || process.env.NO_COLOR) {
+    return text;
+  }
+  return `${colorCode}${text}\x1b[0m`;
+}
+
+function runImageCommand(command, args) {
+  const result = spawnSync(command, args, { stdio: 'inherit' });
+  return !result.error && result.status === 0;
+}
+
+function tryPrintTerminalLogo() {
+  if (!process.stdout.isTTY || process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') {
+    return false;
+  }
+
+  if (process.env.TERM_PROGRAM === 'vscode') {
+    return false;
+  }
+
+  const logoPath = path.resolve(__dirname, '../docs/awscfn-logo-light.svg');
+  if (!fs.existsSync(logoPath)) {
+    return false;
+  }
+
+  // Try native terminal image commands (best effort).
+  if (process.env.WEZTERM_PANE && runImageCommand('wezterm', ['imgcat', '--width', '40%', logoPath])) {
+    return true;
+  }
+
+  if (process.env.KITTY_WINDOW_ID && runImageCommand('kitty', ['+kitten', 'icat', '--align', 'left', logoPath])) {
+    return true;
+  }
+
+  if (process.env.ITERM_SESSION_ID && runImageCommand('imgcat', [logoPath])) {
+    return true;
+  }
+
+  return false;
+}
+
+function printLandingHeader() {
+  const boldWhite = '\x1b[1;37m';
+  const gray = '\x1b[90m';
+  const tagline = 'Deploy CloudFormation stacks with confidence.';
+  const hr = maybeColorize('─'.repeat(tagline.length), gray);
+
+  if (!tryPrintTerminalLogo()) {
+    console.log(maybeColorize(ASCII_LOGO.join('\n'), boldWhite));
+  }
+
+  console.log(hr);
+  console.log(tagline);
+  console.log(hr);
+  console.log(maybeColorize('Quick start: awscfn list-stacks | awscfn inspect-stack -n <stack-name>', gray));
+  console.log('');
+}
+
 function logErrorDetails(data) {
   if (data) {
     console.log('\nError details:');
@@ -57,13 +121,162 @@ function logErrorDetails(data) {
   }
 }
 
+function getProfileAwareCommand(baseCommand) {
+  const profile = process.env.AWS_PROFILE;
+  if (!profile) return baseCommand;
+
+  return `${baseCommand} --profile ${profile}`;
+}
+
+function getAwsConfigPath() {
+  if (process.env.AWS_CONFIG_FILE) return process.env.AWS_CONFIG_FILE;
+
+  return path.join(os.homedir(), '.aws', 'config');
+}
+
+function getAwsCredentialsPath() {
+  if (process.env.AWS_SHARED_CREDENTIALS_FILE) return process.env.AWS_SHARED_CREDENTIALS_FILE;
+
+  return path.join(os.homedir(), '.aws', 'credentials');
+}
+
+function readIniSections(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+
+    return content
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith('[') && line.endsWith(']'))
+      .map((line) => line.slice(1, -1).trim());
+  } catch {
+    return [];
+  }
+}
+
+function getConfiguredProfiles() {
+  const configSections = readIniSections(getAwsConfigPath())
+    .map((section) => section.startsWith('profile ') ? section.slice('profile '.length) : section);
+  const credentialSections = readIniSections(getAwsCredentialsPath());
+
+  return new Set([...configSections, ...credentialSections]);
+}
+
+function hasCredentialHints() {
+  if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+    return true;
+  }
+
+  const configuredProfiles = getConfiguredProfiles();
+  const requestedProfile = process.env.AWS_PROFILE;
+
+  if (requestedProfile) return configuredProfiles.has(requestedProfile);
+
+  return configuredProfiles.has('default');
+}
+
+function formatRegionOnlyHelp() {
+  const configureCmd = getProfileAwareCommand('aws configure');
+  const showRegionCmd = getProfileAwareCommand('aws configure get region');
+
+  return [
+    'AWS region is not configured.',
+    [
+      'Set a region:',
+      '  • export AWS_REGION=us-east-1',
+      `  • ${configureCmd}`,
+    ].join('\n'),
+    [
+      'Check current region:',
+      `  • ${showRegionCmd}`,
+    ].join('\n'),
+    'Tip: if you use named profiles, set AWS_PROFILE first.',
+  ].join('\n\n');
+}
+
+function formatAuthSetupHelp(profileMissing) {
+  const profile = process.env.AWS_PROFILE;
+  const showRegionCmd = getProfileAwareCommand('aws configure get region');
+  const configureSsoCmd = getProfileAwareCommand('aws configure sso');
+  const ssoLoginCmd = getProfileAwareCommand('aws sso login');
+  const stsCheckCmd = getProfileAwareCommand('aws sts get-caller-identity');
+  const configureCmd = getProfileAwareCommand('aws configure');
+  const profileHint = profile ? `Using AWS profile '${profile}'.` : 'Using default AWS profile.';
+
+  const profileSection = profileMissing && profile
+    ? [
+      `Profile '${profile}' was not found.`,
+      `Create it first: ${configureSsoCmd}`,
+    ].join('\n')
+    : profileHint;
+
+  return [
+    'AWS authentication is not configured for this command yet.',
+    profileSection,
+    'Choose one authentication method:',
+    [
+      'AWS SSO:',
+      `  • ${configureSsoCmd}`,
+      `  • ${ssoLoginCmd}`,
+    ].join('\n'),
+    [
+      'Access keys:',
+      `  • ${configureCmd}  # adds keys + default region`,
+    ].join('\n'),
+    [
+      'Then verify identity:',
+      `  • ${stsCheckCmd}`,
+    ].join('\n'),
+    [
+      'If region is still missing:',
+      '  • export AWS_REGION=us-east-1',
+      `  • ${showRegionCmd}`,
+    ].join('\n'),
+  ].filter(Boolean).join('\n\n');
+}
+
+function formatAuthorizationHelp() {
+  const stsCheckCmd = getProfileAwareCommand('aws sts get-caller-identity');
+
+  return [
+    'AWS authentication succeeded, but this identity does not have enough permissions.',
+    [
+      'Confirm which identity is active:',
+      `  • ${stsCheckCmd}`,
+    ].join('\n'),
+    'Then ask for the required CloudFormation permissions for this account/role.',
+  ].join('\n\n');
+}
+
 function clarifyAwsError(msg) {
-  if (/region\s+is\s+missing|configuration.*region|Missing required key 'region'/i.test(msg)) {
-    return 'AWS region is not set. Set AWS_REGION or AWS_DEFAULT_REGION, or run `aws configure` (or `aws configure sso` if your org uses SSO).';
+  const isRegionMissing = /region\s+is\s+missing|configuration.*region|Missing required key 'region'/i.test(msg);
+  const isCredentialsMissing = /Unable to locate credentials|Could not load credentials|NoCredentialProviders/i.test(msg)
+    || /Token is expired|ExpiredToken|security token included in the request is expired/i.test(msg)
+    || /sso.*expired|refresh failed|SSO session.*invalid|aws sso login/i.test(msg)
+    || /resolved credential object is not valid|credential.*could not be loaded/i.test(msg);
+  const requestedProfile = process.env.AWS_PROFILE;
+  const requestedProfileMissing = Boolean(
+    requestedProfile && !getConfiguredProfiles().has(requestedProfile),
+  );
+  const isProfileMissing = /config profile .* could not be found|profile.*not found/i.test(msg)
+    || requestedProfileMissing;
+
+  if (isRegionMissing && hasCredentialHints() && !isProfileMissing) {
+    return formatRegionOnlyHelp();
   }
-  if (/credentials|Unable to locate credentials|Token is expired/i.test(msg)) {
-    return 'AWS credentials not found or expired. Set AWS_PROFILE, AWS_ACCESS_KEY_ID/secret, or run `aws configure` (or `aws configure sso` if your org uses SSO).';
+
+  if (
+    isRegionMissing
+    || isCredentialsMissing
+    || isProfileMissing
+  ) {
+    return formatAuthSetupHelp(isProfileMissing);
   }
+
+  if (/AccessDenied|UnauthorizedOperation|is not authorized to perform|AccessDeniedException/i.test(msg)) {
+    return formatAuthorizationHelp();
+  }
+
   return msg;
 }
 
@@ -71,11 +284,17 @@ async function runCommand(fn) {
   try {
     await fn();
   } catch (err) {
-    const message = clarifyAwsError(err.message);
-    logError(message);
-    if (message !== err.message) {
-      console.log(`\x1b[90m(original: ${err.message})\x1b[0m`);
+    const originalError = err?.message || String(err);
+    const message = clarifyAwsError(originalError);
+
+    logError(originalError);
+
+    if (message !== originalError) {
+      console.log('');
+      console.log(maybeColorize('Suggested next steps:', '\x1b[36m'));
+      console.log(message);
     }
+
     if (getOutputConfig().verbose) {
       logErrorDetails(err.data);
     }
@@ -132,7 +351,13 @@ const pagerOpt = {
   },
 };
 
-yargs
+const cli = yargs
+  .scriptName('awscfn')
+  .usage('Usage:\n  $0 <command> [options]')
+  .example('$0 list-stacks', 'List active stacks in the current AWS region')
+  .example('$0 inspect-stack -n my-stack', 'Open a read-only stack inspection view')
+  .example('$0 update-stack -n my-stack -t ./template.yaml -p ./params.yaml', 'Update an existing stack')
+  .epilog('Tip: run `awscfn <command> --help` for command-specific help.')
   .option('ci', {
     type: 'boolean',
     alias: 'C',
@@ -236,5 +461,12 @@ yargs
   .help()
   .alias('h', 'help')
   .version(pkg.version)
-  .alias('v', 'version')
-  .argv;
+  .alias('v', 'version');
+
+if (process.argv.length <= 2) {
+  printLandingHeader();
+  cli.showHelp();
+  process.exit(0);
+}
+
+cli.argv;

@@ -9,7 +9,7 @@
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 [![AutoRel](https://img.shields.io/badge/%F0%9F%9A%80%20AutoRel-2D4DDE)](https://github.com/mhweiner/autorel)
 
-Deploy CloudFormation stacks without the usual suffering.
+Deploy CloudFormation stacks with confidence.
 
 ## Why awscfn?
 
