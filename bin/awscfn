@@ -13,6 +13,8 @@ const { inspectStack } = require('../dist/inspectStack');
 const { previewStack } = require('../dist/previewStack');
 const { redeployStack } = require('../dist/redeployStack');
 const { updateStack } = require('../dist/updateStack');
+const { validateTemplateOrExit } = require('../dist/cli/validateTemplate');
+const { initCloudFormationClient } = require('../dist/lib/cfn');
 const { getOutputConfig, setOutputConfig } = require('../dist/lib/output');
 
 const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'));
@@ -429,6 +431,19 @@ const cli = yargs
     (cmd) => cmd.options({ ...nameOpt, ...templateOpt, ...paramsOpt, ...setOpt }),
     ({ name, template, params, set }) => {
       runCommand(() => previewStack(name, template, params, require('../dist/cli/parseParamOverrides').parseParamOverrides(set).overrides));
+    }
+  )
+  .command(
+    'validate-template',
+    'Validate a CloudFormation template',
+    (cmd) => cmd.options({ ...templateOpt }),
+    ({ template }) => {
+      runCommand(async () => {
+        initCloudFormationClient();
+        const templateBody = fs.readFileSync(template, 'utf8');
+        await validateTemplateOrExit(templateBody);
+        console.log('template is valid');
+      });
     }
   )
   .command(

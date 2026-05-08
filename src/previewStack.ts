@@ -40,6 +40,37 @@ export async function previewStack(
 
     info(`${symbols.arrow} Preview ${cyan(operation)} for stack ${cyan(stackName)}`);
 
-    await cfn.previewChangeSet(stackName, {body: template, params}, operation);
+    try {
+
+        await cfn.previewChangeSet(stackName, {body: template, params}, operation);
+
+    } finally {
+
+        await cleanupCreatePreviewStack(existing, stackName);
+
+    }
+
+}
+
+async function cleanupCreatePreviewStack(
+    existing: Awaited<ReturnType<typeof cfn.getStackByName>>,
+    stackName: string,
+): Promise<void> {
+
+    if (existing) return;
+
+    const createdForPreview = await cfn.getStackByName(stackName, true);
+
+    if (!createdForPreview || createdForPreview.StackStatus !== StackStatus.REVIEW_IN_PROGRESS) {
+
+        return;
+
+    }
+
+    warn(
+        `Preview created stack ${stackName} in REVIEW_IN_PROGRESS. `
+        + 'Cleaning it up automatically...',
+    );
+    await cfn.deleteStack(createdForPreview);
 
 }

@@ -180,6 +180,18 @@ If the stack is **`ROLLBACK_COMPLETE`**, **`update-stack`** would delete and rec
 
 Non-resource change-set entries (for example hooks) are counted and noted when they are not shown as table rows.
 
+### ✅ validate-template
+
+Validate a CloudFormation template without creating a change set.
+
+```bash
+awscfn validate-template -t <TEMPLATE_FILE>
+```
+
+| Flag | Description |
+|------|-------------|
+| `--template`, `-t` | CloudFormation template file |
+
 ### ♻️ redeploy-stack
 
 ```bash
