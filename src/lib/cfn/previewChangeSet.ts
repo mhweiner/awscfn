@@ -9,9 +9,16 @@ import {
     submitChangeSetRequest,
     waitForChangeSetBuild,
     type ChangeSetOperation,
+    type SubmitChangeSetOptions,
 } from './executeChangeSet';
 import {Template, TemplateParams, getCfClient} from './index';
 import {cyan, dim, gray, info, success, symbols} from '../output';
+
+export interface PreviewChangeSetOptions extends SubmitChangeSetOptions {}
+export interface PreviewChangeSetResult {
+    previewStackId?: string
+}
+type PreviewError = Error & { previewStackId?: string };
 
 function isNoChangesOutcome(desc: DescribeChangeSetOutput): boolean {
 
@@ -91,29 +98,71 @@ function printPlannedTable(stackName: string, desc: DescribeChangeSetOutput): vo
 
 }
 
-/** Fetch full change list after the SDK waiter finished building the change set (waiter polls status only). */
-async function runPreviewFromBuiltChangeSet(
-    stackName: string,
-    changeSetId: string,
-): Promise<void> {
+function toPreviewError(
+    original: unknown,
+    detail: string,
+    previewStackId?: string,
+): PreviewError {
 
-    const desc = await describeChangeSetPaginated(changeSetId);
+    const error = original instanceof Error
+        ? original
+        : new Error(detail, {cause: original});
+
+    error.message = `${detail}${original instanceof Error ? ` — ${original.message}` : ''}`;
+
+    (error as PreviewError).previewStackId = previewStackId;
+
+    return error as PreviewError;
+
+}
+
+async function waitForPreviewDescription(
+    changeSetId: string,
+): Promise<DescribeChangeSetOutput> {
+
+    try {
+
+        await waitForChangeSetBuild(changeSetId);
+
+    } catch (waitErr) {
+
+        const descEarly = await describeChangeSetPaginated(changeSetId);
+
+        if (isNoChangesOutcome(descEarly)) return descEarly;
+
+        const detail = descEarly.StatusReason ?? 'Change set did not complete successfully';
+
+        throw toPreviewError(waitErr, detail, descEarly.StackId);
+
+    }
+
+    return describeChangeSetPaginated(changeSetId);
+
+}
+
+function finalizePreviewResult(
+    stackName: string,
+    desc: DescribeChangeSetOutput,
+): PreviewChangeSetResult {
 
     if (isNoChangesOutcome(desc)) {
 
         success(`${symbols.check} Stack ${cyan(stackName)} — no changes to apply`);
-
-        return;
+        return {previewStackId: desc.StackId};
 
     }
 
     if (desc.Status !== 'CREATE_COMPLETE') {
 
-        throw new Error(desc.StatusReason ?? `Change set status: ${desc.Status ?? 'unknown'}`);
+        const detail = desc.StatusReason ?? `Change set status: ${desc.Status ?? 'unknown'}`;
+
+        throw toPreviewError(new Error(detail), detail, desc.StackId);
 
     }
 
     printPlannedTable(stackName, desc);
+
+    return {previewStackId: desc.StackId};
 
 }
 
@@ -124,44 +173,18 @@ export async function previewChangeSet<P extends TemplateParams>(
     stackName: string,
     template: Template<P>,
     operation: ChangeSetOperation,
-): Promise<void> {
+    options: PreviewChangeSetOptions = {},
+): Promise<PreviewChangeSetResult> {
 
     dim(`  ${symbols.bullet} Building change set ${gray(`(${operation.toLowerCase()} preview)`)}`);
 
-    const changeSetId = await submitChangeSetRequest(stackName, template, operation);
+    const changeSetId = await submitChangeSetRequest(stackName, template, operation, options);
 
     try {
 
-        try {
+        const desc = await waitForPreviewDescription(changeSetId);
 
-            await waitForChangeSetBuild(changeSetId);
-
-        } catch (waitErr) {
-
-            const descEarly = await describeChangeSetPaginated(changeSetId);
-
-            if (isNoChangesOutcome(descEarly)) {
-
-                success(`${symbols.check} Stack ${cyan(stackName)} — no changes to apply`);
-
-                return;
-
-            }
-
-            const detail = descEarly.StatusReason ?? 'Change set did not complete successfully';
-
-            if (waitErr instanceof Error) {
-
-                waitErr.message = `${detail} — ${waitErr.message}`;
-                throw waitErr;
-
-            }
-
-            throw new Error(detail, {cause: waitErr});
-
-        }
-
-        await runPreviewFromBuiltChangeSet(stackName, changeSetId);
+        return finalizePreviewResult(stackName, desc);
 
     } finally {
 

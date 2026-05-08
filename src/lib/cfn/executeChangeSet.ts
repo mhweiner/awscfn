@@ -7,6 +7,9 @@ import {Template, TemplateParams, getCfClient} from './index';
 import {dim, getOutputConfig, gray, startSpinner, symbols} from '../output';
 
 export type ChangeSetOperation = 'UPDATE' | 'CREATE';
+export interface SubmitChangeSetOptions {
+    clientToken?: string
+}
 
 function hasParams<P extends TemplateParams>(template: Template<P>): boolean {
 
@@ -33,6 +36,7 @@ export async function submitChangeSetRequest<P extends TemplateParams>(
     stackName: string,
     template: Template<P>,
     operation: ChangeSetOperation,
+    options: SubmitChangeSetOptions = {},
 ): Promise<string> {
 
     const cf = getCfClient();
@@ -49,6 +53,7 @@ export async function submitChangeSetRequest<P extends TemplateParams>(
         ChangeSetType: operation,
         Parameters: parameters,
         Capabilities: ['CAPABILITY_NAMED_IAM', 'CAPABILITY_AUTO_EXPAND'],
+        ClientToken: options.clientToken,
     }));
 
     return changeset.Id as string;

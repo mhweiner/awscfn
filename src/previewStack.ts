@@ -1,3 +1,4 @@
+import {randomUUID} from 'node:crypto';
 import {stdin, stdout} from 'node:process';
 import {createInterface} from 'node:readline/promises';
 import {StackStatus} from '@aws-sdk/client-cloudformation';
@@ -11,6 +12,7 @@ const PREVIEW_DELETE_WAIT_TIMEOUT_MS = 2 * 60 * 1000;
 const PREVIEW_DELETE_POLL_MS = 3000;
 
 type ExistingStack = Awaited<ReturnType<typeof cfn.getStackByName>>;
+type PreviewChangeSetError = Error & { previewStackId?: string };
 
 /**
  * CLI: preview stack changes without executing (build change set, print table, delete change set).
@@ -27,9 +29,10 @@ export async function previewStack(
 
     const {template, params} = await loadTemplateAndParams(templatePath, paramsPath, overrides);
     const existing = await cfn.getStackByName(stackName);
+    const previewRunId = createPreviewRunId();
 
     await ensurePreviewable(stackName, template, existing);
-    await previewThenMaybeDeploy(stackName, template, params, existing);
+    await previewThenMaybeDeploy(stackName, template, params, existing, previewRunId);
 
 }
 
@@ -38,13 +41,26 @@ async function previewThenMaybeDeploy(
     template: string,
     params: Record<string, unknown>,
     existing: ExistingStack,
+    previewRunId: string,
 ): Promise<void> {
 
-    await runPreviewChangeSet(stackName, template, params, existing);
+    const previewStackId = await runPreviewChangeSet(
+        stackName,
+        template,
+        params,
+        existing,
+        previewRunId,
+    );
 
     const shouldDeploy = await promptDeployAfterPreview(stackName);
 
-    await cleanupCreatePreviewStackBestEffort(existing, stackName, shouldDeploy);
+    await cleanupCreatePreviewStackBestEffort(
+        existing,
+        stackName,
+        shouldDeploy,
+        previewStackId,
+        previewRunId,
+    );
 
     if (!shouldDeploy) return;
 
@@ -58,7 +74,8 @@ async function runPreviewChangeSet(
     template: string,
     params: Record<string, unknown>,
     existing: ExistingStack,
-): Promise<void> {
+    previewRunId: string,
+): Promise<string|undefined> {
 
     const operation = existing ? 'UPDATE' : 'CREATE';
 
@@ -66,11 +83,27 @@ async function runPreviewChangeSet(
 
     try {
 
-        await cfn.previewChangeSet(stackName, {body: template, params}, operation);
+        const previewResult = await cfn.previewChangeSet(
+            stackName,
+            {body: template, params},
+            operation,
+            {clientToken: previewRunId},
+        );
+
+        return previewResult.previewStackId;
 
     } catch (error) {
 
-        await cleanupCreatePreviewStackBestEffort(existing, stackName, false);
+        const previewStackId = getPreviewStackIdFromError(error)
+            ?? await resolvePreviewStackId(existing, stackName);
+
+        await cleanupCreatePreviewStackBestEffort(
+            existing,
+            stackName,
+            false,
+            previewStackId,
+            previewRunId,
+        );
         throw error;
 
     }
@@ -105,11 +138,19 @@ async function cleanupCreatePreviewStackBestEffort(
     existing: ExistingStack,
     stackName: string,
     waitForCompletion: boolean,
+    expectedStackId?: string,
+    previewRunId?: string,
 ): Promise<void> {
 
     try {
 
-        await cleanupCreatePreviewStack(existing, stackName, waitForCompletion);
+        await cleanupCreatePreviewStack(
+            existing,
+            stackName,
+            waitForCompletion,
+            expectedStackId,
+            previewRunId,
+        );
 
     } catch (error) {
 
@@ -125,11 +166,14 @@ async function cleanupCreatePreviewStack(
     existing: ExistingStack,
     stackName: string,
     waitForCompletion: boolean,
+    expectedStackId?: string,
+    previewRunId?: string,
 ): Promise<void> {
 
-    if (existing) return;
+    if (shouldSkipPreviewCleanup(existing, stackName, expectedStackId, previewRunId)) return;
 
-    const createdForPreview = await cfn.getStackByName(stackName, true);
+    const verifiedStackId = expectedStackId as string;
+    const createdForPreview = await getOwnedPreviewStackForCleanup(stackName, verifiedStackId);
 
     if (!createdForPreview) return;
 
@@ -155,13 +199,57 @@ async function cleanupCreatePreviewStack(
 
     if (waitForCompletion) {
 
-        await waitForPreviewDeletion(stackName);
+        await waitForPreviewDeletion(stackName, verifiedStackId);
 
     }
 
 }
 
-async function waitForPreviewDeletion(stackName: string): Promise<void> {
+function shouldSkipPreviewCleanup(
+    existing: ExistingStack,
+    stackName: string,
+    expectedStackId?: string,
+    previewRunId?: string,
+): boolean {
+
+    if (existing) return true;
+
+    if (expectedStackId) return false;
+
+    warn(
+        `Skipping automatic preview cleanup for stack "${stackName}" `
+        + `${previewRunId ? `(run ${previewRunId.slice(0, 8)}) ` : ''}`
+        + 'because ownership could not be verified.',
+    );
+
+    return true;
+
+}
+
+async function getOwnedPreviewStackForCleanup(
+    stackName: string,
+    expectedStackId: string,
+): Promise<NonNullable<ExistingStack>|undefined> {
+
+    const createdForPreview = await cfn.getStackByName(stackName, true);
+
+    if (!createdForPreview) return undefined;
+
+    if (isOwnedPreviewStack(createdForPreview, expectedStackId)) return createdForPreview;
+
+    warn(
+        `Skipping automatic preview cleanup for stack "${stackName}" `
+        + 'because stack identity changed.',
+    );
+
+    return undefined;
+
+}
+
+async function waitForPreviewDeletion(
+    stackName: string,
+    expectedStackId: string,
+): Promise<void> {
 
     const startedAt = Date.now();
 
@@ -171,6 +259,16 @@ async function waitForPreviewDeletion(stackName: string): Promise<void> {
 
         if (!current) return;
 
+        if (!isOwnedPreviewStack(current, expectedStackId)) {
+
+            warn(
+                `Stopping preview cleanup wait for stack "${stackName}" `
+                + 'because stack identity changed.',
+            );
+            return;
+
+        }
+
         await new Promise((resolve) => setTimeout(resolve, PREVIEW_DELETE_POLL_MS));
 
     }
@@ -179,6 +277,40 @@ async function waitForPreviewDeletion(stackName: string): Promise<void> {
         `Timed out waiting for preview cleanup to delete stack "${stackName}". `
         + 'Try again in a minute.',
     );
+
+}
+
+function createPreviewRunId(): string {
+
+    return randomUUID();
+
+}
+
+function getPreviewStackIdFromError(error: unknown): string|undefined {
+
+    return (error as PreviewChangeSetError)?.previewStackId;
+
+}
+
+async function resolvePreviewStackId(
+    existing: ExistingStack,
+    stackName: string,
+): Promise<string|undefined> {
+
+    if (existing) return undefined;
+
+    const createdForPreview = await cfn.getStackByName(stackName, true);
+
+    return createdForPreview?.StackId;
+
+}
+
+function isOwnedPreviewStack(
+    stack: NonNullable<ExistingStack>,
+    expectedStackId: string,
+): boolean {
+
+    return stack.StackId === expectedStackId;
 
 }
 
