@@ -106,7 +106,7 @@ awscfn list-stacks
 
 ### 🔎 inspect-stack
 
-Inspect a **deployed** stack in a **read-only pager view** (TUI-like), including:
+Inspect a **deployed** stack in an **interactive multi-pane TUI** (with pager/text fallback), including:
 
 - full deployed template body
 - current parameters and outputs
@@ -122,7 +122,7 @@ awscfn inspect-stack -n <STACK_NAME>
 |------|-------------|
 | `--name`, `-n` | Stack name |
 | `--events`, `-e` | Max stack events to fetch (`0` = all available events). Default `500` |
-| `--pager` / `--no-pager` | Use a view-only pager (default true). Disable to print directly |
+| `--pager` / `--no-pager` | Use interactive TUI/pager output (default true). Disable to print directly |
 
 This command performs read-only CloudFormation API calls (`DescribeStacks`, `GetTemplate`, `DescribeStackEvents`) and makes no stack changes.
 

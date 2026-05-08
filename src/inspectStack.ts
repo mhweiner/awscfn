@@ -1,6 +1,7 @@
 import {Stack, StackEvent} from '@aws-sdk/client-cloudformation';
 import * as cfn from './lib/cfn';
 import {viewText} from './lib/viewText';
+import {InspectTuiSection, viewInspectTui} from './lib/viewInspectTui';
 
 export interface InspectStackOptions {
     eventsLimit: number
@@ -117,7 +118,7 @@ function formatParameters(stack: Stack): string {
     if (params.length === 0) return 'No parameters on stack.';
 
     return params
-        .map((param) => `${param.ParameterKey ?? 'Unknown'}=${param.ParameterValue ?? '(no value returned)'}`)
+        .map((param) => `${param.ParameterKey ?? 'Unknown'}: ${param.ParameterValue ?? '(no value returned)'}`)
         .join('\n');
 
 }
@@ -128,7 +129,7 @@ function formatOutputs(stack: Stack): string {
 
     if (outputs.length === 0) return 'No outputs on stack.';
 
-    return outputs.map((output) => `${output.OutputKey ?? 'Unknown'}=${output.OutputValue ?? ''}`).join('\n');
+    return outputs.map((output) => `${output.OutputKey ?? 'Unknown'}: ${output.OutputValue ?? ''}`).join('\n');
 
 }
 
@@ -203,21 +204,37 @@ function stackSummary(stack: Stack): string {
 
 }
 
-function buildReport(stack: Stack, templateBody: string, events: StackEvent[], options: InspectStackOptions): string {
+function buildSections(
+    stack: Stack,
+    templateBody: string,
+    events: StackEvent[],
+    options: InspectStackOptions,
+): InspectTuiSection[] {
 
     const failures = getFailureEvents(toChronological(events));
-    const sections = [
-        formatSection('Stack Summary', stackSummary(stack)),
-        formatSection('Stack Details (Raw JSON)', stackDetailsJson(stack)),
-        formatSection('Parameters', formatParameters(stack)),
-        formatSection('Outputs', formatOutputs(stack)),
-        formatSection('Likely Root Causes', formatRootCauses(failures)),
-        formatSection('Failure Events', formatFailureEvents(failures)),
-        formatSection('Events', formatEvents(events, options.eventsLimit)),
-        formatSection('Full Deployed Template', templateBody || 'Template body is empty.'),
+    const sections: InspectTuiSection[] = [
+        {title: 'Stack Summary', body: stackSummary(stack)},
+        {title: 'Stack Details (Raw JSON)', body: stackDetailsJson(stack)},
+        {title: 'Parameters', body: formatParameters(stack)},
+        {title: 'Outputs', body: formatOutputs(stack)},
+        {title: 'Likely Root Causes', body: formatRootCauses(failures)},
+        {title: 'Failure Events', body: formatFailureEvents(failures)},
+        {title: 'Events', body: formatEvents(events, options.eventsLimit)},
+        {title: 'Full Deployed Template', body: templateBody || 'Template body is empty.'},
     ];
 
-    return ['awscfn inspect-stack', '='.repeat(20), '', ...sections].join('\n\n');
+    return sections;
+
+}
+
+function buildReport(sections: InspectTuiSection[]): string {
+
+    return [
+        'awscfn inspect-stack',
+        '='.repeat(20),
+        '',
+        ...sections.map((section) => formatSection(section.title, section.body)),
+    ].join('\n\n');
 
 }
 
@@ -238,7 +255,29 @@ export async function inspectStack(
         cfn.listStackEvents(stackName, resolvedOptions.eventsLimit),
     ]);
 
-    const report = buildReport(stack, templateBody, events, resolvedOptions);
+    const sections = buildSections(stack, templateBody, events, resolvedOptions);
+
+    if (resolvedOptions.usePager) {
+
+        const didShowTui = await viewInspectTui(sections, {
+            title: `awscfn inspect-stack: ${stackName}`,
+            subtitle: [
+                'Tab switches focus.',
+                'Up/Down navigates.',
+                'PgUp/PgDn scrolls.',
+                'q quits.',
+            ].join(' '),
+        });
+
+        if (didShowTui) {
+
+            return;
+
+        }
+
+    }
+
+    const report = buildReport(sections);
 
     viewText(`inspect-${stackName}`, report, {usePager: resolvedOptions.usePager});
 
