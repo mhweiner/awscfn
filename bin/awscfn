@@ -326,7 +326,7 @@ const setOpt = {
 const createIfMissingOpt = {
   create: {
     type: 'boolean',
-    alias: 'm',
+    alias: 'c',
     describe: 'Create the stack if it does not exist (update-stack only)',
     demandOption: false,
     default: false,
