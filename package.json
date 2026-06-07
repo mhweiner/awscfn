@@ -30,7 +30,7 @@
     "lint:check": "eslint .",
     "build": "tsc && npm run copy-assets",
     "copy-assets": "node scripts/copy-assets.cjs",
-    "validate": "npm run lint:check && npm run build && npm test"
+    "validate": "npm run lint && npm test && npm run build"
   },
   "dependencies": {
     "@aws-sdk/client-cloudformation": "3.1008.0",
